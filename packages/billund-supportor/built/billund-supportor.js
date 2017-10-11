@@ -1476,7 +1476,7 @@ var BaseFESupportor = function () {
 
                 return rules.every(function (rule) {
                     if (rule === '0') return value !== 0 || value !== '0';
-                    if (rule === '""') return value !== '';
+                    if (rule === '""' || rule === '\'\'') return value !== '';
                     if (rule === 'null') return value !== null;
                     if (rule === 'false') return value !== false;
                     return true;
