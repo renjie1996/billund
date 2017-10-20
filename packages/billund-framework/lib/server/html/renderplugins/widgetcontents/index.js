@@ -1,8 +1,12 @@
 'use strict';
 
 const _ = require('lodash');
+const fs = require('fs');
+const ejs = require('ejs');
 const WIDGET = require('billund-enums').widget;
 const RENDER = require('billund-enums').render;
+
+const templatePathCache = {};
 
 /**
  * 分组并且排序组件列表
@@ -82,6 +86,17 @@ function createMainPage(content, shouldHidden) {
             </div>`;
 }
 
+function getTemplateStr(templatePath) {
+    let htmlStr = templatePathCache[templatePath];
+    if (!htmlStr) {
+        htmlStr = fs.readFileSync(templatePath, {
+            encoding: 'utf-8'
+        });
+        templatePathCache[templatePath] = htmlStr;
+    }
+    return htmlStr;
+}
+
 /**
  * 根据widget生成html内容
  *
@@ -90,6 +105,8 @@ function createMainPage(content, shouldHidden) {
  */
 module.exports = function*(config) {
     config = config || {};
+    const options = config.options || {};
+
     const widgets = config.widgets || [];
     const mostImportantWidgets = config.mostImportantWidgets || [];
     const successWidgets = config.executeResults.success || [];
@@ -103,18 +120,38 @@ module.exports = function*(config) {
         const hasSuccessSub = _.some(subWidgets, (subWidget) => {
             return successWidgets.indexOf(subWidget) != -1;
         });
+        let groupId = '';
         const results = subWidgets.map((subWidget) => {
+            groupId = subWidget.group;
             return {
                 name: subWidget.name,
                 html: createSubWidgetSection(subWidget),
-                groupId: subWidget.group
+                groupId
             };
         });
-        return createWidgetGroup(results, hasSuccessSub);
+        return {
+            groupId,
+            html: createWidgetGroup(results, hasSuccessSub)
+        };
     });
+    /*
+        判断,是否有自定义的模板需求
+     */
+    let content = '';
+    if (options.widgetContentTemplatePath) {
+        const renData = {};
+        widgetGroupArr.forEach((item) => {
+            renData[`group${item.groupId}`] = item.html;
+        });
+        content = ejs.render(getTemplateStr(options.widgetContentTemplatePath), renData);
+    } else {
+        content = widgetGroupArr.map((item) => {
+            return item.html;
+        }).join('');
+    }
 
     const shouldHidden = (!config.allowShowEvenFailed) && (mostImportantWidgets.length > successWidgets.length);
     return {
-        result: createMainPage(widgetGroupArr.join(''), shouldHidden)
+        result: createMainPage(content, shouldHidden)
     };
 };

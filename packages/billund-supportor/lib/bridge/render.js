@@ -45,6 +45,7 @@ function render(widgetBridge) {
  */
 function connectReactElement(widgetBridge) {
     if (!widgetBridge.store) return;
+    if (!widgetBridge.rootContainer) return;
 
     if (!(widgetBridge.initialProps && widgetBridge.template)) return;
 
@@ -93,6 +94,7 @@ function connectReactElement(widgetBridge) {
  */
 function connectVueTemplateElement(widgetBridge) {
     if (!widgetBridge.store) return;
+    if (!widgetBridge.rootContainer) return;
 
     if (!(widgetBridge.initialProps)) return;
     /*
