@@ -44,7 +44,7 @@ function connectVueTemplateElement(widgetBridge) {
 
     const needRouter = !!widgetBridge.routerConfig;
     if (needRouter) {
-        const component = new Vue({
+        const component = {
             components: {
                 'wrapped-element': widgetBridge.template
             },
@@ -59,7 +59,7 @@ function connectVueTemplateElement(widgetBridge) {
                     props
                 });
             }
-        });
+        };
         const routerConfig = widgetBridge.routerConfig;
 
         routerConfig.routes = routerConfig.routes.map((route) => {

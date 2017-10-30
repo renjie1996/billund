@@ -4177,7 +4177,7 @@ function connectVueTemplateElement(widgetBridge) {
                 supportor.registOwnModule(this.legoWidgetId, storeConfig);
             },
             render: function render(h) {
-                return h('router-view', {});
+                return h('router-view');
             }
         });
         return;

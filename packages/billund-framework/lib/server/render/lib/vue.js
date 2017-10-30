@@ -110,7 +110,7 @@ function getEmptyComponent() {
 function createProvider(wrappedElement, props, store, routerConfig) {
     const needRouter = !!routerConfig;
     if (needRouter) {
-        const component = new Vue({
+        const component = {
             components: {
                 'wrapped-element': wrappedElement
             },
@@ -119,7 +119,7 @@ function createProvider(wrappedElement, props, store, routerConfig) {
                     props
                 });
             }
-        });
+        };
         routerConfig.routes = routerConfig.routes.map((route) => {
             return Object.assign(route, {
                 component: route.showldShow ? component : getEmptyComponent()
