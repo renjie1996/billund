@@ -64,7 +64,11 @@ function connectVueTemplateElement(widgetBridge) {
 
         routerConfig.routes = routerConfig.routes.map((route) => {
             return Object.assign(route, {
-                component: route.showldShow ? component : ''
+                component: route.showldShow ? component : new Vue({
+                    render(h) {
+                        return h('');
+                    }
+                })
             });
         });
         new Vue({
@@ -83,6 +87,9 @@ function connectVueTemplateElement(widgetBridge) {
                 if (!(supportor && supportor.registOwnModule)) return;
 
                 supportor.registOwnModule(this.legoWidgetId, storeConfig);
+            },
+            render(h) {
+                return h('router-view');
             }
         });
         return;

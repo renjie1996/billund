@@ -13,6 +13,7 @@ const renderer = require('vue-server-renderer').createRenderer({
         maxAge: 1000 * 60 * 60
     })
 });
+let emptyComponent = null;
 
 /**
  * 渲染组件内容
@@ -86,6 +87,17 @@ function isValidProps(data) {
     return data && _.isObject(data);
 }
 
+function getEmptyComponent() {
+    if (!emptyComponent) {
+        emptyComponent = new Vue({
+            render(h) {
+                return h('');
+            }
+        });
+    }
+    return emptyComponent;
+}
+
 /**
  * 在外围创建一个根节点,包装我们自己的容器
  *
@@ -110,12 +122,15 @@ function createProvider(wrappedElement, props, store, routerConfig) {
         });
         routerConfig.routes = routerConfig.routes.map((route) => {
             return Object.assign(route, {
-                component: route.showldShow ? component : ''
+                component: route.showldShow ? component : getEmptyComponent()
             });
         });
         return new Vue({
             router: new VueRouter(routerConfig),
-            store
+            store,
+            render(h) {
+                return h('router-view');
+            }
         });
     }
     return new Vue({

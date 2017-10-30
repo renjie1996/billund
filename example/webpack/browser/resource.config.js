@@ -199,7 +199,8 @@ module.exports = {
         'react-dom': billundEnums.external.REACT_DOM_ROOT_EXTERNAL,
         'react-addons-css-transition-group': billundEnums.external.REACT_CSS_TRANSITION_GROUP_ROOT_EXTERNAL,
         vue: billundEnums.external.VUE_ROOT_EXTERNAL,
-        vuex: billundEnums.external.VUEX_ROOT_EXTERNAL
+        vuex: billundEnums.external.VUEX_ROOT_EXTERNAL,
+        'vue-router': billundEnums.external.VUE_ROUTER_ROOT_EXTERNAL
     },
     module: {
         rules: [{
