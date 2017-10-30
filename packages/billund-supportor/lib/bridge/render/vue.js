@@ -64,11 +64,11 @@ function connectVueTemplateElement(widgetBridge) {
 
         routerConfig.routes = routerConfig.routes.map((route) => {
             return Object.assign(route, {
-                component: route.showldShow ? component : new Vue({
+                component: route.shouldShow ? component : {
                     render(h) {
                         return h('');
                     }
-                })
+                }
             });
         });
         new Vue({

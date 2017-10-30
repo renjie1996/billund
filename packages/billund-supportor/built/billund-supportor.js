@@ -4131,7 +4131,7 @@ function connectVueTemplateElement(widgetBridge) {
 
     var needRouter = !!widgetBridge.routerConfig;
     if (needRouter) {
-        var component = new Vue({
+        var component = {
             components: {
                 'wrapped-element': widgetBridge.template
             },
@@ -4146,16 +4146,16 @@ function connectVueTemplateElement(widgetBridge) {
                     props: props
                 });
             }
-        });
+        };
         var routerConfig = widgetBridge.routerConfig;
 
         routerConfig.routes = routerConfig.routes.map(function (route) {
             return _extends(route, {
-                component: route.showldShow ? component : new Vue({
+                component: route.showldShow ? component : {
                     render: function render(h) {
                         return h('');
                     }
-                })
+                }
             });
         });
         new Vue({

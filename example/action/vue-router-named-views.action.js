@@ -28,14 +28,12 @@ function* action() {
                 path: '/'
             }, {
                 path: '/other'
-            }],
-            mode: 'hash',
-            base: '/vue-router-named-views.html'
+            }]
         }
     };
 }
 
 module.exports = {
-    url: '/vue-router-named-views.html',
+    url: '/',
     action
 };

@@ -89,11 +89,11 @@ function isValidProps(data) {
 
 function getEmptyComponent() {
     if (!emptyComponent) {
-        emptyComponent = new Vue({
+        emptyComponent = {
             render(h) {
                 return h('');
             }
-        });
+        };
     }
     return emptyComponent;
 }
@@ -122,7 +122,7 @@ function createProvider(wrappedElement, props, store, routerConfig) {
         };
         routerConfig.routes = routerConfig.routes.map((route) => {
             return Object.assign(route, {
-                component: route.showldShow ? component : getEmptyComponent()
+                component: route.shouldShow ? component : getEmptyComponent()
             });
         });
         return new Vue({
