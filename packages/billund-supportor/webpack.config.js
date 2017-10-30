@@ -46,6 +46,12 @@ module.exports = {
             commonjs2: 'vuex',
             commonjs: 'vuex',
             amd: 'vuex'
+        },
+        'vue-router': {
+            root: 'VueRouter',
+            commonjs2: 'vue-router',
+            commonjs: 'vue-router',
+            amd: 'vue-router'
         }
     },
     module: {

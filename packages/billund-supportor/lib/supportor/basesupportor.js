@@ -238,17 +238,9 @@ class BaseFESupportor {
     /**
      * 注册router配置
      * important!!! 如果有这个方法，需要提前预设！
-     *
-     * @param {Object} routerConfig - 配置
      */
-    [SupportorEnums.BROWSER_SUPPORTOR_REGISTER_ROUTER_CONFIG](routerConfig) {
-        /*
-            1.这个api会被loader在Supportor初始化后调用，可以放心使用id2PathsMapping
-            2.因为目前在我们组件的设计中，每个组件是一个独立的element tree，所以需要为每一个组件来划分出router配置
-         */
-        if (!(routerConfig && routerConfig.routes && )) return;
-
-        const allPaths = (routerConfig.)
+    [SupportorEnums.BROWSER_SUPPORTOR_REGISTER_ROUTER_CONFIG]() {
+        throw new Error(`you should impletement ${SupportorEnums.BROWSER_SUPPORTOR_REGISTER_ROUTER_CONFIG} function.`);
     }
 
     /**
