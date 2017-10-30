@@ -4,6 +4,7 @@ const isDev = (process.env.LEGO_ENV === 'development' || process.env.BILLUND_ENV
 
 const _ = require('lodash');
 const Vue = require('vue');
+const VueRouter = require('vue-router');
 
 // 目前使用直接创建的方法,因为我们自己已经实现了bigpipe
 const renderer = require('vue-server-renderer').createRenderer({
@@ -18,9 +19,10 @@ const renderer = require('vue-server-renderer').createRenderer({
  *
  * @param  {Object} widget - 组件
  * @param  {Object} data - 渲染数据
+ * @param  {Object} routerConfig - 路由信息配置
  * @return {String}
  */
-function* render(widget, data) {
+function* render(widget, data, routerConfig) {
     const vueConfig = widget.template;
     if (!vueConfig) throw new Error(`name:${widget.name} missing template!`);
 
@@ -29,7 +31,37 @@ function* render(widget, data) {
     // 判断是否是合理的数据类型
     isValidProps(data) || (data = {});
 
-    const provider = createProvider(vueConfig, data, widget.store);
+    /*
+        路由逻辑，判断是否需要router，来处理路由
+     */
+    if (routerConfig && routerConfig.routes && routerConfig.routes.length) {
+        const routes = routerConfig.routes;
+        const allPaths = routes.map((route) => {
+            return route.path;
+        });
+
+        // 兼容rootPath
+        const rootPathIndex = allPaths.findIndex((p) => {
+            return p === '/';
+        });
+        if (rootPathIndex === -1) {
+            allPaths.push({
+                path: '/'
+            });
+        }
+
+        const paths = widget.paths || ['/'];
+        const rs = routes.map((route) => {
+            return Object.assign({}, route, {
+                shouldShow: paths.indexOf(route.path) !== -1
+            });
+        });
+        routerConfig = Object.assign({}, routerConfig, {
+            routes: rs
+        });
+    }
+
+    const provider = createProvider(vueConfig, data, widget.store, routerConfig);
 
     return yield new Promise((resolve, reject) => {
         renderer.renderToString(provider, (error, html) => {
@@ -60,9 +92,32 @@ function isValidProps(data) {
  * @param  {Object} wrappedElement - 被包装的元素
  * @param  {Object} props - 数据
  * @param  {Object} store - vuex store
+ * @param  {Object} routerConfig - 路由信息配置
  * @return {Object}
  */
-function createProvider(wrappedElement, props, store) {
+function createProvider(wrappedElement, props, store, routerConfig) {
+    const needRouter = !!routerConfig;
+    if (needRouter) {
+        const component = new Vue({
+            components: {
+                'wrapped-element': wrappedElement
+            },
+            render(h) {
+                return h('wrapped-element', {
+                    props
+                });
+            }
+        });
+        routerConfig.routes = routerConfig.routes.map((route) => {
+            return Object.assign(route, {
+                component: route.showldShow ? component : ''
+            });
+        });
+        return new Vue({
+            router: new VueRouter(routerConfig),
+            store
+        });
+    }
     return new Vue({
         store,
         components: {

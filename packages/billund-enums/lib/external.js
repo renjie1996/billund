@@ -14,6 +14,8 @@ const VUE_ROOT_EXTERNAL = 'window Vue';
 
 const VUEX_ROOT_EXTERNAL = 'window Vuex';
 
+const VUE_ROUTER_ROOT_EXTERNAL = 'window VueRouter';
+
 module.exports = {
     REACT_ROOT_EXTERNAL,
     REACT_DOM_ROOT_EXTERNAL,
@@ -21,5 +23,6 @@ module.exports = {
     REDUX_ROOT_EXTERNAL,
     REACT_REDUX_ROOT_EXTERNAL,
     VUE_ROOT_EXTERNAL,
-    VUEX_ROOT_EXTERNAL
+    VUEX_ROOT_EXTERNAL,
+    VUE_ROUTER_ROOT_EXTERNAL
 };

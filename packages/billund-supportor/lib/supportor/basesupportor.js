@@ -66,6 +66,8 @@ class BaseFESupportor {
         this.hasTakedViewToFrontEnd = false;
         // 组件id和渲染类型的mapping
         this.id2RenderTypeMapping = {};
+        // 组件的id和单页面路径的映射
+        this.id2PathsMapping = {};
         // 一些与上下文强相关的事件是否已经处理
         this.sthDependentOnContextProcessed = false;
 
@@ -172,6 +174,16 @@ class BaseFESupportor {
         }
 
         /**
+         * 关联组件的id与paths
+         *
+         * @param  {String} id - 组件id
+         * @param  {Array} paths  - 路径列表
+         */
+        function relatedWidgetId2Paths(id, paths) {
+            self.id2PathsMapping[id] = paths;
+        }
+
+        /**
          * 单个widgetConfig的初始化操作
          *
          * @param  {Object} config - 目前字段如下:
@@ -193,6 +205,7 @@ class BaseFESupportor {
         configs.forEach((config) => {
             parseWidgetConfig(config);
             relatedWidget2Name(config.id, config.name);
+            relatedWidgetId2Paths(config.id, config.paths);
         });
     }
 
@@ -220,6 +233,22 @@ class BaseFESupportor {
      */
     [SupportorEnums.BROWSER_SUPPORTOR_REGIST_STORE_CONFIG]() {
         throw new Error(`you should impletement ${SupportorEnums.BROWSER_SUPPORTOR_REGIST_STORE_CONFIG} function.`);
+    }
+
+    /**
+     * 注册router配置
+     * important!!! 如果有这个方法，需要提前预设！
+     *
+     * @param {Object} routerConfig - 配置
+     */
+    [SupportorEnums.BROWSER_SUPPORTOR_REGISTER_ROUTER_CONFIG](routerConfig) {
+        /*
+            1.这个api会被loader在Supportor初始化后调用，可以放心使用id2PathsMapping
+            2.因为目前在我们组件的设计中，每个组件是一个独立的element tree，所以需要为每一个组件来划分出router配置
+         */
+        if (!(routerConfig && routerConfig.routes && )) return;
+
+        const allPaths = (routerConfig.)
     }
 
     /**

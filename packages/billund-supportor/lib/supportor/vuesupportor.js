@@ -3,6 +3,7 @@
 require('es6-promise').polyfill();
 const Vue = require('vue');
 const Vuex = require('vuex');
+const VueRouter = require('vue-router');
 const BaseSupportor = require('./basesupportor.js');
 const Enums = require('billund-enums');
 const WidgetEnums = Enums.widget;
@@ -33,7 +34,7 @@ class VueSupportor extends BaseSupportor {
         /*
             为什么放在这里执行？因为后面两项方法都依赖store的初始化
          */
-        this.useVuex();
+        this.useVuePlugins();
         this.initStore();
         this.parseWidgetConfigs();
         this.initWidgetProps();
@@ -42,8 +43,9 @@ class VueSupportor extends BaseSupportor {
         this.tryDoSthDependentOnContext();
     }
 
-    useVuex() {
+    useVuePlugins() {
         Vue.use(Vuex);
+        Vue.use(VueRouter);
     }
 
     aliasApi() {
@@ -159,6 +161,52 @@ class VueSupportor extends BaseSupportor {
      */
     [SupportorEnums.BROWSER_SUPPORTOR_REGIST_STORE_CONFIG](config) {
         this.hotUpdate(config);
+    }
+
+    /**
+     * 注册router配置
+     * important!!! 如果有这个方法，需要提前预设！
+     *
+     * @param {Object} routerConfig - 配置
+     */
+    [SupportorEnums.BROWSER_SUPPORTOR_REGISTER_ROUTER_CONFIG](routerConfig) {
+        /*
+            1.这个api会被loader在Supportor初始化后调用，可以放心使用id2PathsMapping
+            2.因为目前在我们组件的设计中，每个组件是一个独立的element tree，所以需要为每一个组件来划分出router配置
+         */
+        if (!(routerConfig && routerConfig.routes && routerConfig.routes.length)) return;
+
+        const routes = routerConfig.routes;
+        const allPaths = routes.map((route) => {
+            return route.path;
+        });
+
+        // 兼容rootPath
+        const rootPathIndex = allPaths.findIndex((p) => {
+            return p === '/';
+        });
+        if (rootPathIndex === -1) {
+            allPaths.push({
+                path: '/'
+            });
+        }
+
+        Object.keys(this.id2PathsMapping).forEach((id) => {
+            const widgetBridge = this.getWidgetBridgeById(id);
+            if (!widgetBridge) return;
+
+            // 没有设置的话，代表默认首页出现
+            const paths = this.id2PathsMapping[id] || ['/'];
+            const rs = routes.map((route) => {
+                return Object.assign({}, route, {
+                    shouldShow: paths.indexOf(route.path) !== -1
+                });
+            });
+
+            widgetBridge.initRouterConfig(Object.assign({}, routerConfig, {
+                routes: rs
+            }));
+        });
     }
 
     /**

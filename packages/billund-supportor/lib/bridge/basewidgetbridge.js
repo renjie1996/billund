@@ -27,6 +27,7 @@ class BaseWidgetBridge {
         }
         this.initialProps = null;
         this.prevProps = null;
+        this.routerConfig = null; // router配置
         this.isStarted = false;
         /*
            留待插入的mapStateToProps方法
@@ -51,6 +52,15 @@ class BaseWidgetBridge {
         if (!Util.isObject(config)) return;
 
         this.renderType = config.renderType;
+    }
+
+    /**
+     * 接受对应的配置
+     *
+     * @param  {Object} routerConfig - 对应的路由配置,里面的参数如下:
+     */
+    initRouterConfig(routerConfig) {
+        this.routerConfig = routerConfig;
     }
 
     /**

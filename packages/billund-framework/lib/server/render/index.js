@@ -19,15 +19,16 @@ doInit();
  *
  * @param  {Object} widget - 组件
  * @param  {Object} data - 渲染数据
+ * @param  {Object} routerConfig - 路由信息配置
  * @return {String}
  */
-function* render(widget, data) {
+function* render(widget, data, routerConfig) {
     const renderType = widget.renderType;
     if (renderType == RENDER_TYPE.RENDER_TYPE_VUE) {
         if (!vueRender) {
             vueRender = require('./lib/vue.js');
         }
-        return yield vueRender(widget, data);
+        return yield vueRender(widget, data, routerConfig);
     }
     if (!reactRender) {
         reactRender = require('./lib/react.js');

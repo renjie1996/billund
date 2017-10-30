@@ -158,6 +158,38 @@ function extractStoreConfig(source, state) {
 }
 
 /**
+ * 抓取router的配置
+ *
+ * @param  {String} source - 源代码
+ * @param  {Object} state - 状态对象,有如下几个字段:
+ * {
+ *
+ * }
+ * @return {String}
+ */
+function extractRouterConfig(source, state) {
+    if (!source) return '';
+
+    const ast = babylon.parse(source);
+    let routerConfigStr = '';
+
+    traverse(ast, {
+        ObjectExpression(path) {
+            const properties = path.node.properties || [];
+            const configProperty = properties.find((property) => {
+                return property.key.name === 'routerConfig' || property.key.value === 'routerConfig';
+            });
+            if (!configProperty) return;
+
+            const value = configProperty.value;
+            routerConfigStr = source.substring(value.start, value.end);
+        }
+    });
+
+    return routerConfigStr;
+}
+
+/**
  * 抓取代码中的静态资源内容
  *
  * @param  {String} source - 源代码
@@ -237,6 +269,7 @@ module.exports = {
     extractWidgetInfos,
     extractActionPath,
     extractStoreConfig,
+    extractRouterConfig,
     extractStaticResources,
     extractStaticStyles
 };
