@@ -8,11 +8,13 @@ function* action() {
             },
             {
                 name: 'simple-vue-bar-widget',
-                paths: ['/other']
+                paths: ['/other'],
+                weight: 100
             },
             {
                 name: 'simple-vue-baz-widget',
-                paths: ['/other']
+                paths: ['/other'],
+                weight: 100
             }
         ],
         options: {
@@ -24,6 +26,7 @@ function* action() {
             }]
         },
         routerConfig: {
+            mode: 'history',
             routes: [{
                 path: '/'
             }, {
@@ -34,6 +37,6 @@ function* action() {
 }
 
 module.exports = {
-    url: '/',
+    url: ['/', '/other'],
     action
 };
