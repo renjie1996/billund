@@ -47,11 +47,14 @@ class BaseFESupportor {
          */
         this.initialState = window[StateEnums.INITIAL_STATE] || {};
         this.store = null; // store根据具体类型初始化
+        this.widgetConfigs = null;
         /*
             组件相关
          */
         // 重要的组件
         this.importantWidgets = [];
+        // 成功的重要组件
+        this.successImportantWidgets = [];
         // 失败的组件
         this.fallbackWidgets = [];
         // widgetName到widget实例们的关联
@@ -138,8 +141,8 @@ class BaseFESupportor {
          */
         function extractImportantWidgets() {
             self.importantWidgets = window[WidgetEnums.WIDGETS_IMPORTANT] || [];
-            const successImportantWidgets = window[WidgetEnums.WIDGETS_IMPORTANT_SUCCESSED] || [];
-            successImportantWidgets.forEach((widgetId) => {
+            self.successImportantWidgets = window[WidgetEnums.WIDGETS_IMPORTANT_SUCCESSED] || [];
+            self.successImportantWidgets.forEach((widgetId) => {
                 self.shouldTakeViewToFrontEnd(widgetId);
             });
         }
@@ -154,7 +157,7 @@ class BaseFESupportor {
      * 解析与组件配置的内容
      */
     parseWidgetConfigs() {
-        const configs = window[WidgetEnums.WIDGET_CONFIGS] || [];
+        const configs = this.widgetConfigs = window[WidgetEnums.WIDGET_CONFIGS] || [];
         const self = this;
 
         /**

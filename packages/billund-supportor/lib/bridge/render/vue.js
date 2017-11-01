@@ -1,7 +1,6 @@
 'use strict';
 
 const Vue = require('vue');
-const VueRouter = require('vue-router');
 const Enums = require('billund-enums');
 
 const StateEnums = Enums.state;
@@ -42,38 +41,11 @@ function connectVueTemplateElement(widgetBridge) {
         widgetBridge.rootContainer.appendChild(node);
     }
 
-    const needRouter = !!widgetBridge.routerConfig;
+    const needRouter = !!widgetBridge.routers;
     if (needRouter) {
-        const component = {
-            components: {
-                'wrapped-element': widgetBridge.template
-            },
-            computed: {
-                widgetProps() {
-                    return this.$store.getters[StateEnums.WIDGET_VUEX_GETTERS_PREFIX + widgetBridge.widgetId];
-                }
-            },
-            render(h) {
-                const props = this.widgetProps;
-                return h('wrapped-element', {
-                    props
-                });
-            }
-        };
-        const routerConfig = widgetBridge.routerConfig;
-
-        routerConfig.routes = routerConfig.routes.map((route) => {
-            return Object.assign(route, {
-                component: route.shouldShow ? component : {
-                    render(h) {
-                        return h('');
-                    }
-                }
-            });
-        });
         new Vue({
             el: node,
-            router: new VueRouter(routerConfig),
+            router: widgetBridge.routers,
             data() {
                 return {
                     legoWidgetId: widgetBridge.widgetId
@@ -89,13 +61,16 @@ function connectVueTemplateElement(widgetBridge) {
                 supportor.registOwnModule(this.legoWidgetId, storeConfig);
             },
             render(h) {
-                return h('router-view');
+                return h('router-view', {
+                    props: {
+                        name: widgetBridge.widgetId
+                    }
+                });
             }
         });
         return;
     }
-
-    new Vue({
+    new Vue(Object.assign({}, widgetBridge.baseComponent, {
         el: node,
         data() {
             return {
@@ -103,20 +78,6 @@ function connectVueTemplateElement(widgetBridge) {
             };
         },
         store: widgetBridge.store,
-        components: {
-            'wrapped-element': widgetBridge.template
-        },
-        computed: {
-            widgetProps() {
-                return this.$store.getters[StateEnums.WIDGET_VUEX_GETTERS_PREFIX + widgetBridge.widgetId];
-            }
-        },
-        render(h) {
-            const props = this.widgetProps;
-            return h('wrapped-element', {
-                props
-            });
-        },
         mounted() {
             const storeConfig = widgetBridge.storeConfig;
             if (!storeConfig) return;
@@ -125,7 +86,7 @@ function connectVueTemplateElement(widgetBridge) {
 
             supportor.registOwnModule(this.legoWidgetId, storeConfig);
         }
-    });
+    }));
 }
 
 module.exports = connectVueTemplateElement;

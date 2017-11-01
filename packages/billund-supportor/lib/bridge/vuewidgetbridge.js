@@ -1,6 +1,6 @@
 'use strict';
 
-const render = require('./render.js');
+const render = require('./render/index.js');
 const BaseWidgetBridge = require('./basewidgetbridge.js');
 const Util = require('../util/index.js');
 
@@ -21,26 +21,46 @@ class VueWidgetBridge extends BaseWidgetBridge {
 
         this.initialProps = props;
         this.prevProps = props;
-        // 尝试启动
-        this.shouldStart();
+
+        this.propsInited = true;
+        if (this.onPropsInited && this.onPropsInited.length) {
+            this.onPropsInited.forEach((fn) => {
+                fn && fn(props);
+            });
+        }
     }
 
     /**
      * 校验启动条件,满足条件就启动
      */
-    shouldStart() {
+    wait4Start() {
         if (this.isStarted) return;
 
-        if (!this.initialProps) return;
+        Promise.all([this.wait4Component(), this.wait4Router()]).then(() => {
+            this.createWidgetStore();
+        }).then(() => {
+            render(this);
+        });
+    }
 
-        const tpl = this.template;
-        if (!tpl) return;
+    /**
+     * 获取组件的私有state
+     *
+     * @return {Object}
+     */
+    getOwnState() {
+        const widgetId = this.widgetId;
+        const store = this.store;
+        const state = store.state || {};
+        return state[StateEnums.PREFIX_WIDGET_OWN_STATE_KEY + widgetId] || {};
+    }
 
+    createWidgetStore() {
         const self = this;
         /*
             因为vue的特性，需要对存在的字段加入setter,getter,所以我们需要对那些不存在的字段做一个兼容
-         */
-        const declareProps = tpl.props || {};
+        */
+        const declareProps = this.template.props || {};
         const tplProps = {};
 
         const defaultPropKeys = Util.isArray(declareProps) ? declareProps : Object.keys(declareProps);
@@ -65,19 +85,47 @@ class VueWidgetBridge extends BaseWidgetBridge {
                 }
             }
         });
-        render(this);
     }
 
     /**
-     * 获取组件的私有state
+     * 获取组件的component-promise，目前主要用在vue-router中
      *
-     * @return {Object}
+     * @return {Promise}
      */
-    getOwnState() {
-        const widgetId = this.widgetId;
-        const store = this.store;
-        const state = store.state || {};
-        return state[StateEnums.PREFIX_WIDGET_OWN_STATE_KEY + widgetId] || {};
+    wait4Component() {
+        if (!this.getComponentPromise) {
+            /*
+            目前需要等待两个状态,promise才能resolved
+            1.widget.template
+            2.widget.props
+         */
+            const self = this;
+            this.getComponentPromise = new Promise((resolve) => {
+                const after = Util.after(2, () => {
+                    this.baseComponent = {
+                        widgetId: this.id,
+                        components: {
+                            'wrapped-element': self.template
+                        },
+                        computed: {
+                            widgetProps() {
+                                return this.$store.getters[StateEnums.WIDGET_VUEX_GETTERS_PREFIX + self.widgetId];
+                            }
+                        },
+                        render(h) {
+                            const props = this.widgetProps;
+                            return h('wrapped-element', {
+                                props
+                            });
+                        }
+                    };
+                    resolve(this.baseComponent);
+                });
+                this.registerOnPropsInitedListener(after);
+                this.registeronTemplateRegisterListener(after);
+            });
+        }
+        return this.getComponentPromise;
     }
 }
 

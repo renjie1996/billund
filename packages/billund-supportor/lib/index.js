@@ -41,7 +41,7 @@ function addupRenderType() {
  */
 function init() {
     if (window[SupportorEnums.BROWSER_SUPPORTOR]) {
-        console.warn(`there are several different lego-supportor versions,please check.`);
+        console.warn(`there are several different billund-supportor versions,please check.`);
         return window[SupportorEnums.BROWSER_SUPPORTOR];
     }
     const renderTypeCounts = addupRenderType();

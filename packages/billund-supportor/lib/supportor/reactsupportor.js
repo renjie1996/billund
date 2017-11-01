@@ -142,6 +142,29 @@ class ReactSupportor extends BaseSupportor {
     }
 
     /**
+     * 注册router配置
+     * important!!! 如果有这个方法，需要提前预设！
+     * 这个api一定会被调用，因为也需要告知没有router的情况
+     *
+     * @param {Object} routerConfig - 配置
+     */
+    [SupportorEnums.BROWSER_SUPPORTOR_REGISTER_ROUTER_CONFIG](routerConfig) {
+        const id2WidgetBridge = {};
+        (this.widgetConfigs || []).forEach((config) => {
+            const id = config.id;
+            const widgetBridge = this.getWidgetBridgeById(id);
+            if (!widgetBridge) return null;
+
+            id2WidgetBridge[id] = widgetBridge;
+        });
+
+        // TODO React需要支持react-router
+        Object.keys(id2WidgetBridge).forEach((id) => {
+            id2WidgetBridge[id].initRouters();
+        });
+    }
+
+    /**
      * 替换Reducers
      *
      * @param  {Function} reducer - 注册reducers

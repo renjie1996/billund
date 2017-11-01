@@ -8,13 +8,11 @@ function* action() {
             },
             {
                 name: 'simple-vue-bar-widget',
-                paths: ['/other'],
-                weight: 100
+                paths: ['/other']
             },
             {
                 name: 'simple-vue-baz-widget',
-                paths: ['/other'],
-                weight: 100
+                paths: ['/other']
             }
         ],
         options: {

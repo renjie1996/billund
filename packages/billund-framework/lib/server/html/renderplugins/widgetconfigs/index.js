@@ -15,7 +15,7 @@ module.exports = function*(config) {
         const widgetConfig = {
             id: widget.id,
             name: widget.name,
-            path: widget.paths,
+            paths: widget.paths,
             renderType: widget.renderType
         };
         return `

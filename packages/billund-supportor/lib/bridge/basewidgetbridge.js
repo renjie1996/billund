@@ -1,7 +1,7 @@
 'use strict';
 
 const Util = require('../util/index.js');
-const render = require('./render.js');
+const render = require('./render/index.js');
 
 /**
  * widget在前端的配置管理基类
@@ -27,8 +27,16 @@ class BaseWidgetBridge {
         }
         this.initialProps = null;
         this.prevProps = null;
-        this.routerConfig = null; // router配置
-        this.isStarted = false;
+        this.propsInited = false;
+        this.onPropsInited = [];
+
+        this.routers = null; // router配置
+        this.routersInited = false;
+        this.onRouterInited = [];
+
+        this.templateInited = false;
+        this.onTemplateRegister = [];
+
         /*
            留待插入的mapStateToProps方法
            因为可能js先到达的话,那么这个时候先注册了mapState方法,那么就不是initialProps了
@@ -37,6 +45,12 @@ class BaseWidgetBridge {
         //  start与change的监听,允许注册多个
         this.onStartListeners = [];
         this.onChangeListeners = [];
+        this.isStarted = false;
+
+        this.getRouterPromise = null;
+        this.getComponentPromise = null;
+
+        this.wait4Start();
     }
 
     /**
@@ -55,21 +69,12 @@ class BaseWidgetBridge {
     }
 
     /**
-     * 接受对应的配置
-     *
-     * @param  {Object} routerConfig - 对应的路由配置,里面的参数如下:
-     */
-    initRouterConfig(routerConfig) {
-        this.routerConfig = routerConfig;
-    }
-
-    /**
      * 初始化组件的属性
      *
      * @param  {Object} props - 对应的内容
      */
     initProps(props) {
-        throw new Error(`you should implement initProps method.`);
+        throw new Error(`you should implement initProps method & set propsInited`);
     }
 
     /**
@@ -80,6 +85,124 @@ class BaseWidgetBridge {
     getInitialProps() {
         const ret = this.initialProps || {};
         return Util.extend({}, ret);
+    }
+
+    /**
+     * 注册当组件创建成功的方法
+     *
+     * @param  {Function} fn - 成功启动后的回调函数
+     */
+    registerOnPropsInitedListener(fn) {
+        if (!fn) return;
+
+        if (!this.propsInited) {
+            // props还未注册,加入队列,等待调用
+            this.onPropsInited.push(fn);
+            return;
+        }
+
+        // 已经启动了,直接调用
+        window.setTimeout(() => {
+            fn();
+        }, 5);
+    }
+
+    wait4Component() {
+        throw new Error(`you should implement wait4Component function`);
+    }
+
+    /**
+     * 接受对应的配置
+     *
+     * @param  {Object} routers - 对应的路由配置,里面的参数如下:
+     */
+    initRouters(routers) {
+        if (this.routersInited) return;
+        /*
+            区分情况,可能并不存在router
+         */
+        if (routers) {
+            this.routers = routers;
+        } else {
+            this.routers = null;
+        }
+
+        this.routersInited = true;
+        if (this.onRouterInited && this.onRouterInited.length) {
+            this.onRouterInited.forEach((fn) => {
+                fn && fn(routers);
+            });
+        }
+    }
+
+    /**
+     * 注册当组件路由创建成功的方法
+     *
+     * @param  {Function} fn - 成功启动后的回调函数
+     */
+    registerOnRouterInitedListener(fn) {
+        if (!fn) return;
+
+        if (!this.routersInited) {
+            // props还未注册,加入队列,等待调用
+            this.onRouterInited.push(fn);
+            return;
+        }
+
+        // 已经启动了,直接调用
+        window.setTimeout(() => {
+            fn(this.routers);
+        }, 5);
+    }
+
+    wait4Router() {
+        if (!this.getRouterPromise) {
+            this.getRouterPromise = new Promise((resolve) => {
+                this.registerOnRouterInitedListener((routers) => {
+                    resolve(routers);
+                });
+            });
+        }
+        return this.getRouterPromise;
+    }
+
+    /**
+     * 注册组件的代码js
+     *
+     * @param  {Object} widgetModule - 组件内容
+     */
+    registWidgetModule(widgetModule) {
+        if (this.templateInited) return;
+        this.template = widgetModule.template;
+        this.storeConfig = widgetModule.storeConfig;
+
+        this.templateInited = true;
+
+        if (this.onTemplateRegister && this.onTemplateRegister.length) {
+            this.onTemplateRegister.forEach((fn) => {
+                fn && fn();
+            });
+        }
+    }
+
+    /**
+     * 注册当组件创建成功的方法
+     *
+     * @param  {Function} fn - 成功启动后的回调函数
+     */
+    registeronTemplateRegisterListener(fn) {
+        if (!fn) return;
+
+        if (!this.templateInited) {
+            // template还未注册,加入队列,等待调用
+            this.onTemplateRegister.push(fn);
+            return;
+        }
+
+        // 已经启动了,直接调用
+        window.setTimeout(() => {
+            fn();
+        }, 5);
     }
 
     /**
@@ -235,28 +358,14 @@ class BaseWidgetBridge {
     }
 
     /**
-     * 注册组件的代码js
-     *
-     * @param  {Object} widgetModule - 组件内容
-     */
-    registWidgetModule(widgetModule) {
-        this.template = widgetModule.template;
-        this.storeConfig = widgetModule.storeConfig;
-        // 尝试启动
-        this.shouldStart();
-    }
-
-    /**
      * 校验启动组件,满足条件就进行启动
      */
-    shouldStart() {
+    wait4Start() {
         if (this.isStarted) return;
-        // 检查数据是否已经到达
-        if (!this.initialProps) return;
-        // 检查template是否已经到达
-        if (!this.template) return;
 
-        render(this);
+        this.wait4Component().then(() => {
+            render(this);
+        });
     }
 }
 

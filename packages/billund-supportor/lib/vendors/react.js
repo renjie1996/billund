@@ -1,5 +1,6 @@
 'use strict';
 
+require('es6-promise').polyfill();
 window['React'] = window['lego-react'] = require('react');
 window['ReactDom'] = window['lego-react-dom'] = require('react-dom');
 window['ReactAddonsCssTransitionGroup'] = window['lego-react-css-transition-group'] = require('react-addons-css-transition-group');

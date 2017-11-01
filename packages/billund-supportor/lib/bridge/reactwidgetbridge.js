@@ -27,8 +27,37 @@ class ReactWidgetBridge extends BaseWidgetBridge {
             id: self.widgetId,
             data: props
         });
-        // 尝试启动
-        this.shouldStart();
+
+        this.propsInited = true;
+        if (this.onPropsInited && this.onPropsInited.length) {
+            this.onPropsInited.forEach((fn) => {
+                fn && fn(props);
+            });
+        }
+    }
+
+    /**
+     * 获取组件的component-promise，目前主要用在vue-router中
+     *
+     * @return {Promise}
+     */
+    wait4Component() {
+        if (!this.getComponentPromise) {
+            /*
+                目前需要等待两个状态,promise才能resolved
+                1.widget.template
+                2.widget.props
+            */
+            this.getComponentPromise = new Promise((resolve) => {
+                const after = Util.after(2, () => {
+                    this.baseComponent = this.template;
+                    resolve(this.baseComponent);
+                });
+                this.registerOnPropsInitedListener(after);
+                this.registeronTemplateRegisterListener(after);
+            });
+        }
+        return this.getComponentPromise;
     }
 
     /**

@@ -15,25 +15,54 @@ function doInit() {
 doInit();
 
 /**
- * 渲染组件内容
- *
- * @param  {Object} widget - 组件
- * @param  {Object} data - 渲染数据
- * @param  {Object} routerConfig - 路由信息配置
- * @return {String}
+ * 渲染的帮助类
  */
-function* render(widget, data, routerConfig) {
-    const renderType = widget.renderType;
-    if (renderType == RENDER_TYPE.RENDER_TYPE_VUE) {
-        if (!vueRender) {
-            vueRender = require('./lib/vue.js');
+class RenderUtil {
+    constructor(widgets) {
+        this.widgets = widgets;
+        this.id2ComponentCreatedCb = {};
+    }
+
+    /**
+     * 注册组件创建成功回调
+     *
+     * @param  {String} id - 组件id
+     * @param  {Function} cb - 回调
+     */
+    registerComponentCreateedCb(id, cb) {
+        this.id2ComponentCreatedCb[id] = cb;
+    }
+
+    /**
+     * 生成vueComponet的Promise
+     *
+     * @return {Object}
+     */
+    getComponentPromises() {
+        const ret = {};
+        this.widgets.forEach((widget) => {
+            ret[widget.id] = new Promise((resolve) => {
+                this.registerComponentCreateedCb(widget.id, (component) => {
+                    resolve(component);
+                });
+            });
+        });
+        return ret;
+    }
+
+    * render(context, widget, data) {
+        const renderType = widget.renderType;
+        if (renderType == RENDER_TYPE.RENDER_TYPE_VUE) {
+            if (!vueRender) {
+                vueRender = require('./lib/vue.js');
+            }
+            return yield vueRender(context, widget, data, this.id2ComponentCreatedCb[widget.id]);
         }
-        return yield vueRender(widget, data, routerConfig);
+        if (!reactRender) {
+            reactRender = require('./lib/react.js');
+        }
+        return reactRender(widget, data);
     }
-    if (!reactRender) {
-        reactRender = require('./lib/react.js');
-    }
-    return reactRender(widget, data);
 }
 
-module.exports = render;
+module.exports = RenderUtil;

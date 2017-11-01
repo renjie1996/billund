@@ -10,7 +10,8 @@ const legoUtils = require('billund-utils');
 const parallel = require('../../util/parallel');
 const widgetUtil = require('./util/widgetutil');
 const store = require('../store/index');
-const render = require('../render/index');
+const router = require('../router/index');
+const renderUtil = require('../render/index');
 
 const isDev = (process.env.LEGO_ENV === 'development' || process.env.BILLUND_ENV === 'development');
 
@@ -80,14 +81,16 @@ function* execute(context) {
         进行一些基本的准备工作,例如区分核心非核心模块，自动填充静态资源，创建store等
      */
     const widgets = widgetUtil.convertWidgets(legoConfig.widgets || []);
-    const routerConfig = legoConfig.routerConfig;
     const mostImportantWidgets = legoUtils.widget.extractImportantWidgets(widgets);
     const otherWidgets = _.difference(widgets, mostImportantWidgets);
     const staticResources = exportStaticResources(legoConfig, widgets);
+
+    context.billundRenderUtil = new renderUtil(mostImportantWidgets);
     store.assemblyStore(legoConfig, mostImportantWidgets);
+    router.assemblyRouters(context, legoConfig, mostImportantWidgets);
 
     const combineResults = yield {
-        important: renderMostImportantWidgets(context, mostImportantWidgets, routerConfig),
+        important: renderMostImportantWidgets(context, mostImportantWidgets),
         other: renderOtherWidgets(context, otherWidgets)
     };
 
@@ -216,11 +219,10 @@ function exportStaticResources(config, widgets) {
  *
  * @param  {Object} context - 执行上下文
  * @param  {Array} widgets - widgets的配置数组
- * @param  {Object} routerConfig - 路由信息配置
  * @return {Object} - 分别对应成功和失败的结果
  */
-function* renderMostImportantWidgets(context, widgets, routerConfig) {
-    const tasks = buildWidgetTasks(context, widgets, false, routerConfig);
+function* renderMostImportantWidgets(context, widgets) {
+    const tasks = buildWidgetTasks(context, widgets, false);
     const ret = yield tasks;
 
     const successWidgets = {};
@@ -250,10 +252,9 @@ function* renderOtherWidgets(context, widgets) {
  * @param {Object} context - 执行上下文
  * @param {Array} widgets - widgets的配置数组
  * @param {Boolean} mustFail - 要求模块必须以失败的形式返回
- * @param  {Object} routerConfig - 路由信息配置
  * @return {Object} widget-id与任务执行的对象
  */
-function buildWidgetTasks(context, widgets, mustFail, routerConfig) {
+function buildWidgetTasks(context, widgets, mustFail) {
     const result = {};
     widgets.forEach((widget) => {
         function* fn() {
@@ -261,7 +262,7 @@ function buildWidgetTasks(context, widgets, mustFail, routerConfig) {
             widget.paramMiss = paramMiss;
             const meetCon = (!mustFail) && (!widget.mustFail) && !(paramMiss && paramMiss.length);
             // 根据结果来进行判断如何执行
-            const genFn = meetCon ? wrapToSuccGen(context, widget, routerConfig) : wrapToFailGen(widget);
+            const genFn = meetCon ? wrapToSuccGen(context, widget) : wrapToFailGen(widget);
             let ret = yield parallel(genFn, {
                 timeout: 2000,
                 fallback: null
@@ -330,10 +331,9 @@ function pickoutMissParam(params, requireParams) {
  *
  * @param {Object} context - koa上下文
  * @param  {Object} widget - widget配置
- * @param  {Object} routerConfig - 路由信息配置
  * @return {Function}
  */
-function wrapToSuccGen(context, widget, routerConfig) {
+function wrapToSuccGen(context, widget) {
     return function*() {
         // 参数需要clone下,以免被widget的数据执行函数修改了
         const params = _.clone(widget.params);
@@ -379,7 +379,7 @@ function wrapToSuccGen(context, widget, routerConfig) {
         /*
             meta与data一起进行用以渲染，data的优先级更高
          */
-        const results = yield render(widget, Object.assign({}, meta, data), routerConfig);
+        const results = yield context.billundRenderUtil.render(context, widget, Object.assign({}, meta, data));
 
         if (computedServerCacheKey) {
             widgetCaches.set(computedServerCacheKey, {

@@ -166,46 +166,69 @@ class VueSupportor extends BaseSupportor {
     /**
      * 注册router配置
      * important!!! 如果有这个方法，需要提前预设！
+     * 这个api一定会被调用，因为也需要告知没有router的情况
      *
      * @param {Object} routerConfig - 配置
      */
     [SupportorEnums.BROWSER_SUPPORTOR_REGISTER_ROUTER_CONFIG](routerConfig) {
-        /*
-            1.这个api会被loader在Supportor初始化后调用，可以放心使用id2PathsMapping
-            2.因为目前在我们组件的设计中，每个组件是一个独立的element tree，所以需要为每一个组件来划分出router配置
-         */
-        if (!(routerConfig && routerConfig.routes && routerConfig.routes.length)) return;
+        const id2WidgetBridge = {};
+        (this.widgetConfigs || []).forEach((config) => {
+            const id = config.id;
+            const widgetBridge = this.getWidgetBridgeById(id);
+            if (!widgetBridge) return null;
+
+            id2WidgetBridge[id] = widgetBridge;
+        });
+
+        if (!(routerConfig && routerConfig.routes && routerConfig.routes.length)) {
+            Object.keys(id2WidgetBridge).forEach((id) => {
+                id2WidgetBridge[id].initRouters();
+            });
+            return;
+        }
 
         const routes = routerConfig.routes;
-        const allPaths = routes.map((route) => {
-            return route.path;
-        });
-
-        // 兼容rootPath
-        const rootPathIndex = allPaths.findIndex((p) => {
-            return p === '/';
+        const rootPathIndex = routes.findIndex((route) => {
+            return route.path === '/';
         });
         if (rootPathIndex === -1) {
-            allPaths.push({
+            routes.push({
                 path: '/'
             });
         }
 
-        Object.keys(this.id2PathsMapping).forEach((id) => {
-            const widgetBridge = this.getWidgetBridgeById(id);
-            if (!widgetBridge) return;
+        /*
+            1.从ssr成功的组件中，获取对应的componentPromise
+            2.成功后设置routers
+         */
 
-            // 没有设置的话，代表默认首页出现
-            const paths = this.id2PathsMapping[id] || ['/'];
-            const rs = routes.map((route) => {
-                return Object.assign({}, route, {
-                    shouldShow: paths.indexOf(route.path) !== -1
+        const wait4SuccessComponents = this.successImportantWidgets.map((id) => {
+            return id2WidgetBridge[id].wait4Component();
+        });
+
+        Promise.all(wait4SuccessComponents).then((components) => {
+            routes.forEach((route) => {
+                route.components = route.components || {};
+
+                const path = route.path;
+                Object.keys(this.id2PathsMapping).forEach((id) => {
+                    // 没有设置的话，代表默认首页出现
+                    const paths = this.id2PathsMapping[id] || ['/'];
+                    if (paths.indexOf(path) !== -1) {
+                        const successComponent = components.find((component) => {
+                            return component.widgetId === id;
+                        });
+                        const component = successComponent || function() {
+                            return id2WidgetBridge[id].wait4Component();
+                        };
+                        route.components[id] = component;
+                    }
                 });
             });
-
-            widgetBridge.initRouterConfig(Object.assign({}, routerConfig, {
-                routes: rs
-            }));
+            const routers = new VueRouter(routerConfig);
+            Object.keys(id2WidgetBridge).forEach((id) => {
+                id2WidgetBridge[id].initRouters(routers);
+            });
         });
     }
 
