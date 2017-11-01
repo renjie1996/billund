@@ -1,6 +1,6 @@
 {
   "name": "generator-billund",
-  "version": "1.1.0-alpha.1",
+  "version": "1.1.0-alpha.6",
   "description": "f2e boilerplate for billund & koa application.",
   "main": "index.js",
   "scripts": {
