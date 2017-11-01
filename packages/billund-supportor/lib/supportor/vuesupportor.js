@@ -122,7 +122,7 @@ class VueSupportor extends BaseSupportor {
                     element = {
                         render(h) {
                             return h('i', {
-                                class: {
+                                'class': {
                                     'empty-component': true
                                 }
                             });

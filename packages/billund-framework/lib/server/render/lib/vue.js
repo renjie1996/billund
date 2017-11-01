@@ -63,7 +63,7 @@ const getEmptyComponent = (function() {
             element = {
                 render(h) {
                     return h('i', {
-                        class: {
+                        'class': {
                             'empty-component': true
                         }
                     });
