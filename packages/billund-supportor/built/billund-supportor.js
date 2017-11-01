@@ -3935,8 +3935,8 @@ var VueSupportor = function (_BaseSupportor) {
                         element = {
                             render: function render(h) {
                                 return h('i', {
-                                    style: {
-                                        display: 'none'
+                                    'class': {
+                                        'empty-component': true
                                     }
                                 });
                             }

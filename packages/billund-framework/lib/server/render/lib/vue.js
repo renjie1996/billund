@@ -100,7 +100,7 @@ function createProvider(context, widget, props) {
             if (route.components[widget.id]) {
                 route.components[widget.id] = component;
             } else {
-                route.components[widget.id] = getEmptyComponent;
+                route.components[widget.id] = getEmptyComponent();
             }
         });
         const router = new VueRouter(widget.router);
