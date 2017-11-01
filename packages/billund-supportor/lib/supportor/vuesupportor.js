@@ -114,6 +114,24 @@ class VueSupportor extends BaseSupportor {
          * 目前根据webpack的打包方式，也不会导致js分批次到达
          */
         this.dispatch = this.store.dispatch;
+
+        this.getEmptyComponent = (function() {
+            let element = null;
+            return function() {
+                if (!element) {
+                    element = {
+                        render(h) {
+                            return h('i', {
+                                style: {
+                                    display: 'none'
+                                }
+                            });
+                        }
+                    };
+                }
+                return element;
+            };
+        }());
     }
 
     /**
@@ -222,6 +240,8 @@ class VueSupportor extends BaseSupportor {
                             return id2WidgetBridge[id].wait4Component();
                         };
                         route.components[id] = component;
+                    } else {
+                        route.components[id] = this.getEmptyComponent();
                     }
                 });
             });

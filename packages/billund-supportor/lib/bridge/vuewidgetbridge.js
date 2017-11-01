@@ -103,7 +103,7 @@ class VueWidgetBridge extends BaseWidgetBridge {
             this.getComponentPromise = new Promise((resolve) => {
                 const after = Util.after(2, () => {
                     this.baseComponent = {
-                        widgetId: this.id,
+                        widgetId: this.widgetId,
                         components: {
                             'wrapped-element': self.template
                         },

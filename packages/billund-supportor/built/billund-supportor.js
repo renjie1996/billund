@@ -7,7 +7,7 @@
 		exports["BillundSupportor"] = factory(require("react"), require("react-redux"), require("vue"), require("react-dom"), require("redux"), require("vue-router"), require("vuex"));
 	else
 		root["BillundSupportor"] = factory(root["React"], root["ReactRedux"], root["Vue"], root["ReactDom"], root["Redux"], root["VueRouter"], root["Vuex"]);
-})(this, function(__WEBPACK_EXTERNAL_MODULE_9__, __WEBPACK_EXTERNAL_MODULE_10__, __WEBPACK_EXTERNAL_MODULE_11__, __WEBPACK_EXTERNAL_MODULE_28__, __WEBPACK_EXTERNAL_MODULE_29__, __WEBPACK_EXTERNAL_MODULE_30__, __WEBPACK_EXTERNAL_MODULE_31__) {
+})(this, function(__WEBPACK_EXTERNAL_MODULE_9__, __WEBPACK_EXTERNAL_MODULE_10__, __WEBPACK_EXTERNAL_MODULE_11__, __WEBPACK_EXTERNAL_MODULE_29__, __WEBPACK_EXTERNAL_MODULE_30__, __WEBPACK_EXTERNAL_MODULE_31__, __WEBPACK_EXTERNAL_MODULE_32__) {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -73,7 +73,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 18);
+/******/ 	return __webpack_require__(__webpack_require__.s = 19);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -362,7 +362,7 @@ module.exports = {
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
-var Util = __webpack_require__(19);
+var Util = __webpack_require__(20);
 
 function extend(obj) {
     var args = Array.prototype.slice.call(arguments, 1);
@@ -404,6 +404,18 @@ function isObject(obj) {
 
 function isString(obj) {
     return Object.prototype.toString.call(obj) == '[object String]';
+}
+
+function after(n, func) {
+    if (typeof func != 'function') {
+        throw new TypeError('func shouldbe a function');
+    }
+    n = parseInt(n);
+    return function () {
+        if (--n < 1) {
+            return func.apply(this, arguments);
+        }
+    };
 }
 
 var isArray = Array.isArray || function (obj) {
@@ -491,6 +503,7 @@ module.exports = {
     isString: isString,
     isFunction: isFunction,
     isArray: isArray,
+    after: after,
     showDiv: Util.showDiv,
     hideDiv: Util.hideDiv,
     removeDom: removeDom,
@@ -568,9 +581,16 @@ var BaseWidgetBridge = function () {
         }
         this.initialProps = null;
         this.prevProps = null;
+        this.propsInited = false;
+        this.onPropsInited = [];
+
         this.routers = null; // router配置
-        this.onComponentCreated = null;
-        this.isStarted = false;
+        this.routersInited = false;
+        this.onRouterInited = [];
+
+        this.templateInited = false;
+        this.onTemplateRegister = [];
+
         /*
            留待插入的mapStateToProps方法
            因为可能js先到达的话,那么这个时候先注册了mapState方法,那么就不是initialProps了
@@ -579,6 +599,12 @@ var BaseWidgetBridge = function () {
         //  start与change的监听,允许注册多个
         this.onStartListeners = [];
         this.onChangeListeners = [];
+        this.isStarted = false;
+
+        this.getRouterPromise = null;
+        this.getComponentPromise = null;
+
+        this.wait4Start();
     }
 
     /**
@@ -601,18 +627,6 @@ var BaseWidgetBridge = function () {
         }
 
         /**
-         * 接受对应的配置
-         *
-         * @param  {Object} routers - 对应的路由配置,里面的参数如下:
-         */
-
-    }, {
-        key: 'initRouters',
-        value: function initRouters(routers) {
-            this.routers = routers;
-        }
-
-        /**
          * 初始化组件的属性
          *
          * @param  {Object} props - 对应的内容
@@ -621,7 +635,7 @@ var BaseWidgetBridge = function () {
     }, {
         key: 'initProps',
         value: function initProps(props) {
-            throw new Error('you should implement initProps method.');
+            throw new Error('you should implement initProps method & set propsInited');
         }
 
         /**
@@ -635,6 +649,145 @@ var BaseWidgetBridge = function () {
         value: function getInitialProps() {
             var ret = this.initialProps || {};
             return Util.extend({}, ret);
+        }
+
+        /**
+         * 注册当组件创建成功的方法
+         *
+         * @param  {Function} fn - 成功启动后的回调函数
+         */
+
+    }, {
+        key: 'registerOnPropsInitedListener',
+        value: function registerOnPropsInitedListener(fn) {
+            if (!fn) return;
+
+            if (!this.propsInited) {
+                // props还未注册,加入队列,等待调用
+                this.onPropsInited.push(fn);
+                return;
+            }
+
+            // 已经启动了,直接调用
+            window.setTimeout(function () {
+                fn();
+            }, 5);
+        }
+    }, {
+        key: 'wait4Component',
+        value: function wait4Component() {
+            throw new Error('you should implement wait4Component function');
+        }
+
+        /**
+         * 接受对应的配置
+         *
+         * @param  {Object} routers - 对应的路由配置,里面的参数如下:
+         */
+
+    }, {
+        key: 'initRouters',
+        value: function initRouters(routers) {
+            if (this.routersInited) return;
+            /*
+                区分情况,可能并不存在router
+             */
+            if (routers) {
+                this.routers = routers;
+            } else {
+                this.routers = null;
+            }
+
+            this.routersInited = true;
+            if (this.onRouterInited && this.onRouterInited.length) {
+                this.onRouterInited.forEach(function (fn) {
+                    fn && fn(routers);
+                });
+            }
+        }
+
+        /**
+         * 注册当组件路由创建成功的方法
+         *
+         * @param  {Function} fn - 成功启动后的回调函数
+         */
+
+    }, {
+        key: 'registerOnRouterInitedListener',
+        value: function registerOnRouterInitedListener(fn) {
+            var _this = this;
+
+            if (!fn) return;
+
+            if (!this.routersInited) {
+                // props还未注册,加入队列,等待调用
+                this.onRouterInited.push(fn);
+                return;
+            }
+
+            // 已经启动了,直接调用
+            window.setTimeout(function () {
+                fn(_this.routers);
+            }, 5);
+        }
+    }, {
+        key: 'wait4Router',
+        value: function wait4Router() {
+            var _this2 = this;
+
+            if (!this.getRouterPromise) {
+                this.getRouterPromise = new Promise(function (resolve) {
+                    _this2.registerOnRouterInitedListener(function (routers) {
+                        resolve(routers);
+                    });
+                });
+            }
+            return this.getRouterPromise;
+        }
+
+        /**
+         * 注册组件的代码js
+         *
+         * @param  {Object} widgetModule - 组件内容
+         */
+
+    }, {
+        key: 'registWidgetModule',
+        value: function registWidgetModule(widgetModule) {
+            if (this.templateInited) return;
+            this.template = widgetModule.template;
+            this.storeConfig = widgetModule.storeConfig;
+
+            this.templateInited = true;
+
+            if (this.onTemplateRegister && this.onTemplateRegister.length) {
+                this.onTemplateRegister.forEach(function (fn) {
+                    fn && fn();
+                });
+            }
+        }
+
+        /**
+         * 注册当组件创建成功的方法
+         *
+         * @param  {Function} fn - 成功启动后的回调函数
+         */
+
+    }, {
+        key: 'registeronTemplateRegisterListener',
+        value: function registeronTemplateRegisterListener(fn) {
+            if (!fn) return;
+
+            if (!this.templateInited) {
+                // template还未注册,加入队列,等待调用
+                this.onTemplateRegister.push(fn);
+                return;
+            }
+
+            // 已经启动了,直接调用
+            window.setTimeout(function () {
+                fn();
+            }, 5);
         }
 
         /**
@@ -754,20 +907,6 @@ var BaseWidgetBridge = function () {
         }
 
         /**
-         * 注册当组件创建成功的方法
-         *
-         * @param  {Function} fn - 成功启动后的回调函数
-         */
-
-    }, {
-        key: 'registerOnComponentCreatedListener',
-        value: function registerOnComponentCreatedListener(fn) {
-            if (!fn) return;
-
-            this.onComponentCreated = fn;
-        }
-
-        /**
          * 对widgetBridge注册失败listener,如果已经启动不做任何处理
          * 如果还未启动,在一定时间内仍然没有启动的话,认定为失败,那么会回调这个监听
          *
@@ -831,34 +970,19 @@ var BaseWidgetBridge = function () {
         }
 
         /**
-         * 注册组件的代码js
-         *
-         * @param  {Object} widgetModule - 组件内容
-         */
-
-    }, {
-        key: 'registWidgetModule',
-        value: function registWidgetModule(widgetModule) {
-            this.template = widgetModule.template;
-            this.storeConfig = widgetModule.storeConfig;
-            // 尝试启动
-            this.shouldStart();
-        }
-
-        /**
          * 校验启动组件,满足条件就进行启动
          */
 
     }, {
-        key: 'shouldStart',
-        value: function shouldStart() {
-            if (this.isStarted) return;
-            // 检查数据是否已经到达
-            if (!this.initialProps) return;
-            // 检查template是否已经到达
-            if (!this.template) return;
+        key: 'wait4Start',
+        value: function wait4Start() {
+            var _this3 = this;
 
-            render(this);
+            if (this.isStarted) return;
+
+            this.wait4Component().then(function () {
+                render(_this3);
+            });
         }
     }]);
 
@@ -878,11 +1002,8 @@ var Enums = __webpack_require__(0);
 var RenderTypeEnums = Enums.renderType;
 var StateEnums = Enums.state;
 
-var React = __webpack_require__(9);
-var ReactDom = __webpack_require__(28);
-var ReactRedux = __webpack_require__(10);
-
-var VueRender = __webpack_require__(16);
+var VueRender = __webpack_require__(17);
+var ReactRender = __webpack_require__(16);
 
 /**
  * 启动操作,启动后会更改widgetBridge中的状态
@@ -902,7 +1023,7 @@ function render(widgetBridge) {
     if (renderType == RenderTypeEnums.RENDER_TYPE_VUE) {
         VueRender(widgetBridge);
     } else {
-        connectReactElement(widgetBridge);
+        ReactRender(widgetBridge);
     }
     widgetBridge.isStarted = true;
     // 启动监听回调
@@ -911,52 +1032,6 @@ function render(widgetBridge) {
     widgetBridge.store.dispatch({
         type: StateEnums.LEGO_ACTION_TYPE_REFRESH
     });
-}
-
-/**
- * 直接连接react 组件
- *
- * @param  {Object} widgetBridge - WidgetBridge的实例
- */
-function connectReactElement(widgetBridge) {
-    if (!widgetBridge.store) return;
-    if (!widgetBridge.rootContainer) return;
-
-    if (!(widgetBridge.initialProps && widgetBridge.template)) return;
-
-    //  使用闭包进行调用
-    function mapStateToProps(state) {
-        return widgetBridge.mapStateToProps.call(widgetBridge, state);
-    }
-
-    /**
-     * 连接store的一些配置
-     */
-    function connectStore() {
-        var storeConfig = widgetBridge.storeConfig;
-        if (!storeConfig) return;
-
-        var ownReducer = storeConfig.ownReducer;
-        if (ownReducer) {
-            widgetBridge.supportor.registOwnReducer(widgetBridge.widgetId, ownReducer);
-        }
-
-        if (storeConfig.mapStateToProps) {
-            widgetBridge.registMapStateToProps(storeConfig.mapStateToProps);
-        }
-    }
-    /*
-        1.先通过react-connect进行包装
-        2.关联store
-        3.与provider进行连接
-     */
-    var connectedElement = ReactRedux.connect(mapStateToProps)(widgetBridge.template);
-    connectStore();
-
-    ReactDom.render(React.createElement(ReactRedux.Provider, {
-        store: widgetBridge.store,
-        legoWidgetId: widgetBridge.widgetId
-    }, React.createElement(connectedElement, null)), widgetBridge.rootContainer);
 }
 
 module.exports = render;
@@ -975,12 +1050,12 @@ var _createClass = function () { function defineProperties(target, props) { for 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 __webpack_require__(6).polyfill();
-window.regeneratorRuntime = __webpack_require__(26);
+window.regeneratorRuntime = __webpack_require__(27);
 // https://www.npmjs.com/package/browser-cookies
-var Cookies = __webpack_require__(20);
-var qs = __webpack_require__(23);
+var Cookies = __webpack_require__(21);
+var qs = __webpack_require__(24);
 
-var co = __webpack_require__(21);
+var co = __webpack_require__(22);
 var Enums = __webpack_require__(0);
 var WidgetEnums = Enums.widget;
 var StateEnums = Enums.state;
@@ -989,7 +1064,7 @@ var SupportorEnums = Enums.supportor;
 var RenderTypeEnums = Enums.renderType;
 
 var ReactWidgetBridge = __webpack_require__(15);
-var VueWidgetBridge = __webpack_require__(17);
+var VueWidgetBridge = __webpack_require__(18);
 var Util = __webpack_require__(1);
 
 /*
@@ -1024,11 +1099,14 @@ var BaseFESupportor = function () {
          */
         this.initialState = window[StateEnums.INITIAL_STATE] || {};
         this.store = null; // store根据具体类型初始化
+        this.widgetConfigs = null;
         /*
             组件相关
          */
         // 重要的组件
         this.importantWidgets = [];
+        // 成功的重要组件
+        this.successImportantWidgets = [];
         // 失败的组件
         this.fallbackWidgets = [];
         // widgetName到widget实例们的关联
@@ -1132,8 +1210,8 @@ var BaseFESupportor = function () {
              */
             function extractImportantWidgets() {
                 self.importantWidgets = window[WidgetEnums.WIDGETS_IMPORTANT] || [];
-                var successImportantWidgets = window[WidgetEnums.WIDGETS_IMPORTANT_SUCCESSED] || [];
-                successImportantWidgets.forEach(function (widgetId) {
+                self.successImportantWidgets = window[WidgetEnums.WIDGETS_IMPORTANT_SUCCESSED] || [];
+                self.successImportantWidgets.forEach(function (widgetId) {
                     self.shouldTakeViewToFrontEnd(widgetId);
                 });
             }
@@ -1151,7 +1229,7 @@ var BaseFESupportor = function () {
     }, {
         key: 'parseWidgetConfigs',
         value: function parseWidgetConfigs() {
-            var configs = window[WidgetEnums.WIDGET_CONFIGS] || [];
+            var configs = this.widgetConfigs = window[WidgetEnums.WIDGET_CONFIGS] || [];
             var self = this;
 
             /**
@@ -2021,7 +2099,7 @@ function flush() {
 function attemptVertx() {
   try {
     var r = require;
-    var vertx = __webpack_require__(32);
+    var vertx = __webpack_require__(33);
     vertxNext = vertx.runOnLoop || vertx.runOnContext;
     return useVertxTimer();
   } catch (e) {
@@ -3042,7 +3120,7 @@ return Promise$2;
 
 //# sourceMappingURL=es6-promise.map
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(22), __webpack_require__(2)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(23), __webpack_require__(2)))
 
 /***/ }),
 /* 7 */
@@ -3386,7 +3464,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 var React = __webpack_require__(9);
-var Redux = __webpack_require__(29);
+var Redux = __webpack_require__(30);
 var ReactRedux = __webpack_require__(10);
 
 var BaseSupportor = __webpack_require__(5);
@@ -3548,6 +3626,34 @@ var ReactSupportor = function (_BaseSupportor) {
         }
 
         /**
+         * 注册router配置
+         * important!!! 如果有这个方法，需要提前预设！
+         * 这个api一定会被调用，因为也需要告知没有router的情况
+         *
+         * @param {Object} routerConfig - 配置
+         */
+
+    }, {
+        key: SupportorEnums.BROWSER_SUPPORTOR_REGISTER_ROUTER_CONFIG,
+        value: function value(routerConfig) {
+            var _this3 = this;
+
+            var id2WidgetBridge = {};
+            (this.widgetConfigs || []).forEach(function (config) {
+                var id = config.id;
+                var widgetBridge = _this3.getWidgetBridgeById(id);
+                if (!widgetBridge) return null;
+
+                id2WidgetBridge[id] = widgetBridge;
+            });
+
+            // TODO React需要支持react-router
+            Object.keys(id2WidgetBridge).forEach(function (id) {
+                id2WidgetBridge[id].initRouters();
+            });
+        }
+
+        /**
          * 替换Reducers
          *
          * @param  {Function} reducer - 注册reducers
@@ -3694,8 +3800,8 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 __webpack_require__(6).polyfill();
 var Vue = __webpack_require__(11);
-var Vuex = __webpack_require__(31);
-var VueRouter = __webpack_require__(30);
+var Vuex = __webpack_require__(32);
+var VueRouter = __webpack_require__(31);
 var BaseSupportor = __webpack_require__(5);
 var Enums = __webpack_require__(0);
 var WidgetEnums = Enums.widget;
@@ -3877,6 +3983,7 @@ var VueSupportor = function (_BaseSupportor) {
         /**
          * 注册router配置
          * important!!! 如果有这个方法，需要提前预设！
+         * 这个api一定会被调用，因为也需要告知没有router的情况
          *
          * @param {Object} routerConfig - 配置
          */
@@ -3886,11 +3993,21 @@ var VueSupportor = function (_BaseSupportor) {
         value: function value(routerConfig) {
             var _this3 = this;
 
-            /*
-                1.这个api会被loader在Supportor初始化后调用，可以放心使用id2PathsMapping
-                2.因为目前在我们组件的设计中，每个组件是一个独立的element tree，所以需要为每一个组件来划分出router配置
-             */
-            if (!(routerConfig && routerConfig.routes && routerConfig.routes.length)) return;
+            var id2WidgetBridge = {};
+            (this.widgetConfigs || []).forEach(function (config) {
+                var id = config.id;
+                var widgetBridge = _this3.getWidgetBridgeById(id);
+                if (!widgetBridge) return null;
+
+                id2WidgetBridge[id] = widgetBridge;
+            });
+
+            if (!(routerConfig && routerConfig.routes && routerConfig.routes.length)) {
+                Object.keys(id2WidgetBridge).forEach(function (id) {
+                    id2WidgetBridge[id].initRouters();
+                });
+                return;
+            }
 
             var routes = routerConfig.routes;
             var rootPathIndex = routes.findIndex(function (route) {
@@ -3902,34 +4019,38 @@ var VueSupportor = function (_BaseSupportor) {
                 });
             }
 
-            routes.forEach(function (route) {
-                route.components = route.components || {};
+            /*
+                1.从ssr成功的组件中，获取对应的componentPromise
+                2.成功后设置routers
+             */
 
-                var path = route.path;
-                Object.keys(_this3.id2PathsMapping).forEach(function (id) {
-                    // 没有设置的话，代表默认首页出现
-                    var paths = _this3.id2PathsMapping[id] || ['/'];
-                    if (paths.indexOf(path) !== -1) {
-                        // 存在当前路径之中
-                        var widgetBridge = _this3.getWidgetBridgeById(id);
-                        if (!widgetBridge) return;
-
-                        var component = widgetBridge.getVueComponentPromise();
-
-                        route.components[id] = function () {
-                            return component;
-                        };
-                    }
-                });
+            var wait4SuccessComponents = this.successImportantWidgets.map(function (id) {
+                return id2WidgetBridge[id].wait4Component();
             });
 
-            var routers = new VueRouter(routerConfig);
+            Promise.all(wait4SuccessComponents).then(function (components) {
+                routes.forEach(function (route) {
+                    route.components = route.components || {};
 
-            Object.keys(this.id2PathsMapping).forEach(function (id) {
-                var widgetBridge = _this3.getWidgetBridgeById(id);
-                if (!widgetBridge) return;
-
-                widgetBridge.initRouters(routers);
+                    var path = route.path;
+                    Object.keys(_this3.id2PathsMapping).forEach(function (id) {
+                        // 没有设置的话，代表默认首页出现
+                        var paths = _this3.id2PathsMapping[id] || ['/'];
+                        if (paths.indexOf(path) !== -1) {
+                            var successComponent = components.find(function (component) {
+                                return component.widgetId === id;
+                            });
+                            var component = successComponent || function () {
+                                return id2WidgetBridge[id].wait4Component();
+                            };
+                            route.components[id] = component;
+                        }
+                    });
+                });
+                var routers = new VueRouter(routerConfig);
+                Object.keys(id2WidgetBridge).forEach(function (id) {
+                    id2WidgetBridge[id].initRouters(routers);
+                });
             });
         }
 
@@ -4069,8 +4190,42 @@ var ReactWidgetBridge = function (_BaseWidgetBridge) {
                 id: self.widgetId,
                 data: props
             });
-            // 尝试启动
-            this.shouldStart();
+
+            this.propsInited = true;
+            if (this.onPropsInited && this.onPropsInited.length) {
+                this.onPropsInited.forEach(function (fn) {
+                    fn && fn(props);
+                });
+            }
+        }
+
+        /**
+         * 获取组件的component-promise，目前主要用在vue-router中
+         *
+         * @return {Promise}
+         */
+
+    }, {
+        key: 'wait4Component',
+        value: function wait4Component() {
+            var _this2 = this;
+
+            if (!this.getComponentPromise) {
+                /*
+                    目前需要等待两个状态,promise才能resolved
+                    1.widget.template
+                    2.widget.props
+                */
+                this.getComponentPromise = new Promise(function (resolve) {
+                    var after = Util.after(2, function () {
+                        _this2.baseComponent = _this2.template;
+                        resolve(_this2.baseComponent);
+                    });
+                    _this2.registerOnPropsInitedListener(after);
+                    _this2.registeronTemplateRegisterListener(after);
+                });
+            }
+            return this.getComponentPromise;
         }
 
         /**
@@ -4099,6 +4254,67 @@ module.exports = ReactWidgetBridge;
 
 "use strict";
 
+
+var React = __webpack_require__(9);
+var ReactDom = __webpack_require__(29);
+var ReactRedux = __webpack_require__(10);
+
+/**
+ * 直接连接react 组件
+ *
+ * @param  {Object} widgetBridge - WidgetBridge的实例
+ */
+function connectReactElement(widgetBridge) {
+    if (!widgetBridge.store) return;
+    if (!widgetBridge.rootContainer) return;
+
+    if (!(widgetBridge.initialProps && widgetBridge.template)) return;
+
+    //  使用闭包进行调用
+    function mapStateToProps(state) {
+        return widgetBridge.mapStateToProps.call(widgetBridge, state);
+    }
+
+    /**
+     * 连接store的一些配置
+     */
+    function connectStore() {
+        var storeConfig = widgetBridge.storeConfig;
+        if (!storeConfig) return;
+
+        var ownReducer = storeConfig.ownReducer;
+        if (ownReducer) {
+            widgetBridge.supportor.registOwnReducer(widgetBridge.widgetId, ownReducer);
+        }
+
+        if (storeConfig.mapStateToProps) {
+            widgetBridge.registMapStateToProps(storeConfig.mapStateToProps);
+        }
+    }
+    /*
+        1.先通过react-connect进行包装
+        2.关联store
+        3.与provider进行连接
+     */
+    var connectedElement = ReactRedux.connect(mapStateToProps)(widgetBridge.baseComponent);
+    connectStore();
+
+    ReactDom.render(React.createElement(ReactRedux.Provider, {
+        store: widgetBridge.store,
+        legoWidgetId: widgetBridge.widgetId
+    }, React.createElement(connectedElement, null)), widgetBridge.rootContainer);
+}
+
+module.exports = connectReactElement;
+
+/***/ }),
+/* 17 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
 var Vue = __webpack_require__(11);
 var Enums = __webpack_require__(0);
@@ -4143,60 +4359,35 @@ function connectVueTemplateElement(widgetBridge) {
 
     var needRouter = !!widgetBridge.routers;
     if (needRouter) {
-        var component = {
-            components: {
-                'wrapped-element': widgetBridge.template
+        new Vue({
+            el: node,
+            router: widgetBridge.routers,
+            data: function data() {
+                return {
+                    legoWidgetId: widgetBridge.widgetId
+                };
             },
-            computed: {
-                widgetProps: function widgetProps() {
-                    return this.$store.getters[StateEnums.WIDGET_VUEX_GETTERS_PREFIX + widgetBridge.widgetId];
-                }
+
+            store: widgetBridge.store,
+            mounted: function mounted() {
+                var storeConfig = widgetBridge.storeConfig;
+                if (!storeConfig) return;
+                var supportor = widgetBridge.supportor;
+                if (!(supportor && supportor.registOwnModule)) return;
+
+                supportor.registOwnModule(this.legoWidgetId, storeConfig);
             },
             render: function render(h) {
-                var props = this.widgetProps;
-                return h('wrapped-element', {
-                    props: props
+                return h('router-view', {
+                    props: {
+                        name: widgetBridge.widgetId
+                    }
                 });
             }
-        };
-        /*
-            进行回调component创建的方法
-         */
-        if (widgetBridge.onComponentCreated) {
-            widgetBridge.onComponentCreated(component);
-        }
-        window.setTimeout(function () {
-            new Vue({
-                el: node,
-                router: widgetBridge.routers,
-                data: function data() {
-                    return {
-                        legoWidgetId: widgetBridge.widgetId
-                    };
-                },
-
-                store: widgetBridge.store,
-                mounted: function mounted() {
-                    var storeConfig = widgetBridge.storeConfig;
-                    if (!storeConfig) return;
-                    var supportor = widgetBridge.supportor;
-                    if (!(supportor && supportor.registOwnModule)) return;
-
-                    supportor.registOwnModule(this.legoWidgetId, storeConfig);
-                },
-                render: function render(h) {
-                    return h('router-view', {
-                        props: {
-                            name: widgetBridge.widgetId
-                        }
-                    });
-                }
-            });
-        }, 5);
+        });
         return;
     }
-
-    new Vue({
+    new Vue(_extends({}, widgetBridge.baseComponent, {
         el: node,
         data: function data() {
             return {
@@ -4205,20 +4396,6 @@ function connectVueTemplateElement(widgetBridge) {
         },
 
         store: widgetBridge.store,
-        components: {
-            'wrapped-element': widgetBridge.template
-        },
-        computed: {
-            widgetProps: function widgetProps() {
-                return this.$store.getters[StateEnums.WIDGET_VUEX_GETTERS_PREFIX + widgetBridge.widgetId];
-            }
-        },
-        render: function render(h) {
-            var props = this.widgetProps;
-            return h('wrapped-element', {
-                props: props
-            });
-        },
         mounted: function mounted() {
             var storeConfig = widgetBridge.storeConfig;
             if (!storeConfig) return;
@@ -4227,13 +4404,13 @@ function connectVueTemplateElement(widgetBridge) {
 
             supportor.registOwnModule(this.legoWidgetId, storeConfig);
         }
-    });
+    }));
 }
 
 module.exports = connectVueTemplateElement;
 
 /***/ }),
-/* 17 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4282,8 +4459,13 @@ var VueWidgetBridge = function (_BaseWidgetBridge) {
 
             this.initialProps = props;
             this.prevProps = props;
-            // 尝试启动
-            this.shouldStart();
+
+            this.propsInited = true;
+            if (this.onPropsInited && this.onPropsInited.length) {
+                this.onPropsInited.forEach(function (fn) {
+                    fn && fn(props);
+                });
+            }
         }
 
         /**
@@ -4291,20 +4473,41 @@ var VueWidgetBridge = function (_BaseWidgetBridge) {
          */
 
     }, {
-        key: 'shouldStart',
-        value: function shouldStart() {
+        key: 'wait4Start',
+        value: function wait4Start() {
+            var _this2 = this;
+
             if (this.isStarted) return;
 
-            if (!this.initialProps) return;
+            Promise.all([this.wait4Component(), this.wait4Router()]).then(function () {
+                _this2.createWidgetStore();
+            }).then(function () {
+                render(_this2);
+            });
+        }
 
-            var tpl = this.template;
-            if (!tpl) return;
+        /**
+         * 获取组件的私有state
+         *
+         * @return {Object}
+         */
 
+    }, {
+        key: 'getOwnState',
+        value: function getOwnState() {
+            var widgetId = this.widgetId;
+            var store = this.store;
+            var state = store.state || {};
+            return state[StateEnums.PREFIX_WIDGET_OWN_STATE_KEY + widgetId] || {};
+        }
+    }, {
+        key: 'createWidgetStore',
+        value: function createWidgetStore() {
             var self = this;
             /*
                 因为vue的特性，需要对存在的字段加入setter,getter,所以我们需要对那些不存在的字段做一个兼容
-             */
-            var declareProps = tpl.props || {};
+            */
+            var declareProps = this.template.props || {};
             var tplProps = {};
 
             var defaultPropKeys = Util.isArray(declareProps) ? declareProps : Object.keys(declareProps);
@@ -4327,22 +4530,6 @@ var VueWidgetBridge = function (_BaseWidgetBridge) {
                     return self.mapStateToProps(rootState);
                 })
             });
-            render(this);
-        }
-
-        /**
-         * 获取组件的私有state
-         *
-         * @return {Object}
-         */
-
-    }, {
-        key: 'getOwnState',
-        value: function getOwnState() {
-            var widgetId = this.widgetId;
-            var store = this.store;
-            var state = store.state || {};
-            return state[StateEnums.PREFIX_WIDGET_OWN_STATE_KEY + widgetId] || {};
         }
 
         /**
@@ -4352,15 +4539,43 @@ var VueWidgetBridge = function (_BaseWidgetBridge) {
          */
 
     }, {
-        key: 'getVueComponentPromise',
-        value: function getVueComponentPromise() {
-            var _this2 = this;
+        key: 'wait4Component',
+        value: function wait4Component() {
+            var _this3 = this;
 
-            return new Promise(function (reslove) {
-                _this2.registerOnComponentCreatedListener(function (component) {
-                    reslove(component);
+            if (!this.getComponentPromise) {
+                /*
+                目前需要等待两个状态,promise才能resolved
+                1.widget.template
+                2.widget.props
+                */
+                var self = this;
+                this.getComponentPromise = new Promise(function (resolve) {
+                    var after = Util.after(2, function () {
+                        _this3.baseComponent = {
+                            widgetId: _this3.widgetId,
+                            components: {
+                                'wrapped-element': self.template
+                            },
+                            computed: {
+                                widgetProps: function widgetProps() {
+                                    return this.$store.getters[StateEnums.WIDGET_VUEX_GETTERS_PREFIX + self.widgetId];
+                                }
+                            },
+                            render: function render(h) {
+                                var props = this.widgetProps;
+                                return h('wrapped-element', {
+                                    props: props
+                                });
+                            }
+                        };
+                        resolve(_this3.baseComponent);
+                    });
+                    _this3.registerOnPropsInitedListener(after);
+                    _this3.registeronTemplateRegisterListener(after);
                 });
-            });
+            }
+            return this.getComponentPromise;
         }
     }]);
 
@@ -4370,7 +4585,7 @@ var VueWidgetBridge = function (_BaseWidgetBridge) {
 module.exports = VueWidgetBridge;
 
 /***/ }),
-/* 18 */
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4417,7 +4632,7 @@ function addupRenderType() {
  */
 function init() {
     if (window[SupportorEnums.BROWSER_SUPPORTOR]) {
-        console.warn('there are several different lego-supportor versions,please check.');
+        console.warn('there are several different billund-supportor versions,please check.');
         return window[SupportorEnums.BROWSER_SUPPORTOR];
     }
     var renderTypeCounts = addupRenderType();
@@ -4439,7 +4654,7 @@ function init() {
 module.exports = init();
 
 /***/ }),
-/* 19 */
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4486,7 +4701,7 @@ module.exports = {
 };
 
 /***/ }),
-/* 20 */
+/* 21 */
 /***/ (function(module, exports) {
 
 exports.defaults = {};
@@ -4585,7 +4800,7 @@ exports.all = function() {
 
 
 /***/ }),
-/* 21 */
+/* 22 */
 /***/ (function(module, exports) {
 
 
@@ -4828,7 +5043,7 @@ function isObject(val) {
 
 
 /***/ }),
-/* 22 */
+/* 23 */
 /***/ (function(module, exports) {
 
 // shim for using process in browser
@@ -5018,14 +5233,14 @@ process.umask = function() { return 0; };
 
 
 /***/ }),
-/* 23 */
+/* 24 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var stringify = __webpack_require__(25);
-var parse = __webpack_require__(24);
+var stringify = __webpack_require__(26);
+var parse = __webpack_require__(25);
 var formats = __webpack_require__(7);
 
 module.exports = {
@@ -5036,7 +5251,7 @@ module.exports = {
 
 
 /***/ }),
-/* 24 */
+/* 25 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -5217,7 +5432,7 @@ module.exports = function (str, opts) {
 
 
 /***/ }),
-/* 25 */
+/* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -5434,7 +5649,7 @@ module.exports = function (object, opts) {
 
 
 /***/ }),
-/* 26 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global) {// This method of obtaining a reference to the global object needs to be
@@ -5455,7 +5670,7 @@ var oldRuntime = hadRuntime && g.regeneratorRuntime;
 // Force reevalutation of runtime.js.
 g.regeneratorRuntime = undefined;
 
-module.exports = __webpack_require__(27);
+module.exports = __webpack_require__(28);
 
 if (hadRuntime) {
   // Restore the original runtime.
@@ -5472,7 +5687,7 @@ if (hadRuntime) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 27 */
+/* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global) {/**
@@ -6215,12 +6430,6 @@ if (hadRuntime) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 28 */
-/***/ (function(module, exports) {
-
-module.exports = __WEBPACK_EXTERNAL_MODULE_28__;
-
-/***/ }),
 /* 29 */
 /***/ (function(module, exports) {
 
@@ -6240,6 +6449,12 @@ module.exports = __WEBPACK_EXTERNAL_MODULE_31__;
 
 /***/ }),
 /* 32 */
+/***/ (function(module, exports) {
+
+module.exports = __WEBPACK_EXTERNAL_MODULE_32__;
+
+/***/ }),
+/* 33 */
 /***/ (function(module, exports) {
 
 /* (ignored) */

@@ -51,6 +51,6 @@ function connectReactElement(widgetBridge) {
         },
         React.createElement(connectedElement, null)
     ), widgetBridge.rootContainer);
-
+}
 
 module.exports = connectReactElement;

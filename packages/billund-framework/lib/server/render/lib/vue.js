@@ -56,6 +56,24 @@ function isValidProps(data) {
     return data && _.isObject(data);
 }
 
+const getEmptyComponent = (function() {
+    let element = null;
+    return function() {
+        if (!element) {
+            element = {
+                render(h) {
+                    return h('i', {
+                        style: {
+                            display: 'none'
+                        }
+                    });
+                }
+            };
+        }
+        return element;
+    };
+}());
+
 /**
  * 在外围创建一个根节点,包装我们自己的容器
  *
@@ -81,6 +99,8 @@ function createProvider(context, widget, props) {
             route.components = route.components || {};
             if (route.components[widget.id]) {
                 route.components[widget.id] = component;
+            } else {
+                route.components[widget.id] = getEmptyComponent;
             }
         });
         const router = new VueRouter(widget.router);
