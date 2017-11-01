@@ -85,7 +85,6 @@ function* execute(context) {
     const otherWidgets = _.difference(widgets, mostImportantWidgets);
     const staticResources = exportStaticResources(legoConfig, widgets);
 
-    context.billundRenderUtil = new renderUtil(mostImportantWidgets);
     store.assemblyStore(legoConfig, mostImportantWidgets);
     router.assemblyRouters(context, legoConfig, mostImportantWidgets);
 
@@ -379,7 +378,7 @@ function wrapToSuccGen(context, widget) {
         /*
             meta与data一起进行用以渲染，data的优先级更高
          */
-        const results = yield context.billundRenderUtil.render(context, widget, Object.assign({}, meta, data));
+        const results = yield renderUtil.render(context, widget, Object.assign({}, meta, data));
 
         if (computedServerCacheKey) {
             widgetCaches.set(computedServerCacheKey, {

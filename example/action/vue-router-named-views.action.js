@@ -25,6 +25,7 @@ function* action() {
         },
         routerConfig: {
             mode: 'history',
+            base: '/vue-router-named-views/',
             routes: [{
                 path: '/'
             }, {
@@ -35,6 +36,6 @@ function* action() {
 }
 
 module.exports = {
-    url: ['/', '/other'],
+    url: ['/vue-router-named-views/', '/vue-router-named-views/other'],
     action
 };

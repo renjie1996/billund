@@ -17,12 +17,12 @@ const renderer = require('vue-server-renderer').createRenderer({
 /**
  * 渲染组件内容
  *
+ * @param  {Object} context - koa上下文
  * @param  {Object} widget - 组件
  * @param  {Object} data - 渲染数据
- * @param  {Function} onComponentCreated - 当组件创建的回调
  * @return {String}
  */
-function* render(context, widget, data, onComponentCreated) {
+function* render(context, widget, data) {
     const vueConfig = widget.template;
     if (!vueConfig) throw new Error(`name:${widget.name} missing template!`);
 
@@ -31,7 +31,7 @@ function* render(context, widget, data, onComponentCreated) {
     // 判断是否是合理的数据类型
     isValidProps(data) || (data = {});
 
-    const provider = createProvider(context, widget, data, onComponentCreated);
+    const provider = createProvider(context, widget, data);
 
     return yield new Promise((resolve, reject) => {
         renderer.renderToString(provider, (error, html) => {
@@ -77,9 +77,9 @@ const getEmptyComponent = (function() {
 /**
  * 在外围创建一个根节点,包装我们自己的容器
  *
+ * @param  {Object} context - koa上下文
  * @param  {Object} widget - 组件信息
  * @param  {Object} props - 数据
- * @param  {Function} onComponentCreated - 当组件创建的回调
  * @return {Object}
  */
 function createProvider(context, widget, props) {
@@ -115,7 +115,7 @@ function createProvider(context, widget, props) {
                 });
             }
         });
-        router.push(context.url);
+        router.push(widget.router.pushUrl);
         return app;
     }
     return new Vue({
