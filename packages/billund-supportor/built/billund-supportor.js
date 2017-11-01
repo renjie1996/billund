@@ -3927,6 +3927,24 @@ var VueSupportor = function (_BaseSupportor) {
              * 目前根据webpack的打包方式，也不会导致js分批次到达
              */
             this.dispatch = this.store.dispatch;
+
+            this.getEmptyComponent = function () {
+                var element = null;
+                return function () {
+                    if (!element) {
+                        element = {
+                            render: function render(h) {
+                                return h('i', {
+                                    style: {
+                                        display: 'none'
+                                    }
+                                });
+                            }
+                        };
+                    }
+                    return element;
+                };
+            }();
         }
 
         /**
@@ -4044,6 +4062,8 @@ var VueSupportor = function (_BaseSupportor) {
                                 return id2WidgetBridge[id].wait4Component();
                             };
                             route.components[id] = component;
+                        } else {
+                            route.components[id] = _this3.getEmptyComponent();
                         }
                     });
                 });
