@@ -1,6 +1,6 @@
 {
   "name": "billund-source-parser",
-  "version": "1.1.0-alpha.10",
+  "version": "1.1.0-alpha.15",
   "description": "billund source code parser",
   "main": "lib/index.js",
   "scripts": {
@@ -18,6 +18,6 @@
     "babel-traverse": "^6.22.1",
     "babel-types": "^6.22.0",
     "babylon": "^6.15.0",
-    "billund-enums": "^1.1.0-alpha.10"
+    "billund-enums": "^1.1.0-alpha.15"
   }
 }
