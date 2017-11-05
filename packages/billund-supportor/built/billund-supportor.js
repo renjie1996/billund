@@ -4051,6 +4051,10 @@ var VueSupportor = function (_BaseSupportor) {
                     route.components = route.components || {};
 
                     var path = route.path;
+                    var props = route.props;
+                    if (props) {
+                        route.props = {};
+                    }
                     Object.keys(_this3.id2PathsMapping).forEach(function (id) {
                         // 没有设置的话，代表默认首页出现
                         var paths = _this3.id2PathsMapping[id] || ['/'];
@@ -4062,6 +4066,9 @@ var VueSupportor = function (_BaseSupportor) {
                                 return id2WidgetBridge[id].wait4Component();
                             };
                             route.components[id] = component;
+                            if (props) {
+                                route.props[id] = props;
+                            }
                         } else {
                             route.components[id] = _this3.getEmptyComponent();
                         }
@@ -4436,6 +4443,8 @@ module.exports = connectVueTemplateElement;
 "use strict";
 
 
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
@@ -4583,9 +4592,11 @@ var VueWidgetBridge = function (_BaseWidgetBridge) {
                                 }
                             },
                             render: function render(h) {
+                                var attrs = this.$attrs || {}; // for router
                                 var props = this.widgetProps;
                                 return h('wrapped-element', {
-                                    props: props
+                                    props: _extends({}, props, attrs),
+                                    attrs: attrs
                                 });
                             }
                         };

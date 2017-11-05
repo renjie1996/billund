@@ -38,14 +38,21 @@ function createRouter(context, config, widgets) {
     }
 
     routes.forEach((route) => {
-        route.components = route.components || {};
+        route.renderWidgets = route.renderWidgets || {};
 
         const path = route.path;
+        const props = route.props;
+        if (props) {
+            route.props = {};
+        }
         widgets.forEach((widget) => {
             // 没有设置的话，代表默认首页出现
             const paths = widget.paths || ['/'];
             if (paths.indexOf(path) !== -1) {
-                route.components[widget.id] = true;
+                route.renderWidgets[widget.id] = true;
+                if (props) {
+                    route.props[widget.id] = props;
+                }
             }
         });
     });

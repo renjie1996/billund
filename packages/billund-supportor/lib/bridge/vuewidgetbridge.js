@@ -113,9 +113,11 @@ class VueWidgetBridge extends BaseWidgetBridge {
                             }
                         },
                         render(h) {
+                            const attrs = this.$attrs || {}; // for router
                             const props = this.widgetProps;
                             return h('wrapped-element', {
-                                props
+                                props: Object.assign({}, props, attrs),
+                                attrs
                             });
                         }
                     };

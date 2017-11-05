@@ -90,14 +90,16 @@ function createProvider(context, widget, props) {
                 'wrapped-element': widget.template
             },
             render(h) {
+                const attrs = this.$attrs || {}; // for router
                 return h('wrapped-element', {
-                    props
+                    props: Object.assign({}, props, attrs),
+                    attrs
                 });
             }
         };
         widget.router.routes.forEach((route) => {
             route.components = route.components || {};
-            if (route.components[widget.id]) {
+            if (route.renderWidgets[widget.id]) {
                 route.components[widget.id] = component;
             } else {
                 route.components[widget.id] = getEmptyComponent();

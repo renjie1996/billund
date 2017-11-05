@@ -24,8 +24,7 @@ function* action() {
             }]
         },
         routerConfig: {
-            mode: 'history',
-            base: '/vue-router-named-views/',
+            mode: 'hash',
             routes: [{
                 path: '/'
             }, {

@@ -229,6 +229,10 @@ class VueSupportor extends BaseSupportor {
                 route.components = route.components || {};
 
                 const path = route.path;
+                const props = route.props;
+                if (props) {
+                    route.props = {};
+                }
                 Object.keys(this.id2PathsMapping).forEach((id) => {
                     // 没有设置的话，代表默认首页出现
                     const paths = this.id2PathsMapping[id] || ['/'];
@@ -240,6 +244,9 @@ class VueSupportor extends BaseSupportor {
                             return id2WidgetBridge[id].wait4Component();
                         };
                         route.components[id] = component;
+                        if (props) {
+                            route.props[id] = props;
+                        }
                     } else {
                         route.components[id] = this.getEmptyComponent();
                     }
