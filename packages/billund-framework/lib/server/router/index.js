@@ -2,7 +2,7 @@
 
 const RENDER_TYPE = require('billund-enums').renderType;
 
-let vueStoreUtil = null;
+let vueRouterUtil = null;
 
 /**
  * 计算当前页面上的渲染配置
@@ -30,32 +30,32 @@ function addupRenderType(widgets) {
 }
 
 /**
- * 创建store的映射表
+ * 创建对应的router实例
  *
+ * @param  {Object} context - koa上下文
  * @param  {Object} config - 配置
  * @param  {Array} widgets - 对应的重要组件
  */
-function assemblyStore(config, widgets) {
+function assemblyRouters(context, config, widgets) {
     const renderTypes = addupRenderType(widgets);
     /*
-        暂时react还不需要同构的store
-        vue因为vuex的getters需要有同构的store
-        装配进对应的widget
+        react-router TODO;
+        vue-router: 已经完成
      */
-    let reactStore = null;
-    let vueStore = null;
+    let reactRouter = null;
+    let vueRouter = null;
     if (renderTypes.vue > 0) {
-        if (!vueStoreUtil) {
-            vueStoreUtil = require('./lib/vue.js');
+        if (!vueRouterUtil) {
+            vueRouterUtil = require('./lib/vue.js');
         }
-        vueStore = vueStoreUtil.createStore(config, widgets);
+        vueRouter = vueRouterUtil.createRouter(context, config, widgets);
     }
 
     widgets.forEach((widget) => {
-        widget.store = widget.renderType == RENDER_TYPE.RENDER_TYPE_VUE ? vueStore : reactStore;
+        widget.router = widget.renderType == RENDER_TYPE.RENDER_TYPE_VUE ? vueRouter : reactRouter;
     });
 }
 
 module.exports = {
-    assemblyStore
+    assemblyRouters
 };

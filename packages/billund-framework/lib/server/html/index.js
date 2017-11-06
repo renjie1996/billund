@@ -10,7 +10,8 @@ const legoUtils = require('billund-utils');
 const parallel = require('../../util/parallel');
 const widgetUtil = require('./util/widgetutil');
 const store = require('../store/index');
-const render = require('../render/index');
+const router = require('../router/index');
+const renderUtil = require('../render/index');
 
 const isDev = (process.env.LEGO_ENV === 'development' || process.env.BILLUND_ENV === 'development');
 
@@ -83,7 +84,9 @@ function* execute(context) {
     const mostImportantWidgets = legoUtils.widget.extractImportantWidgets(widgets);
     const otherWidgets = _.difference(widgets, mostImportantWidgets);
     const staticResources = exportStaticResources(legoConfig, widgets);
+
     store.assemblyStore(legoConfig, mostImportantWidgets);
+    router.assemblyRouters(context, legoConfig, mostImportantWidgets);
 
     const combineResults = yield {
         important: renderMostImportantWidgets(context, mostImportantWidgets),
@@ -166,7 +169,7 @@ function* execute(context) {
 
     const templateStr = getTemplateStr(legoConfig);
     const templateData = legoConfig.htmlConfig && legoConfig.htmlConfig.data || {};
-    context.body = ejs.render(templateStr, Object.assign(templateData,{
+    context.body = ejs.render(templateStr, Object.assign(templateData, {
         headerResult: headerResults.join(''),
         bodyResult: bodyResults.join('')
     }));
@@ -213,12 +216,12 @@ function exportStaticResources(config, widgets) {
 /**
  * 渲染widgets(并发执行)
  *
- * @param {Object} context - 执行上下文
+ * @param  {Object} context - 执行上下文
  * @param  {Array} widgets - widgets的配置数组
  * @return {Object} - 分别对应成功和失败的结果
  */
 function* renderMostImportantWidgets(context, widgets) {
-    const tasks = buildWidgetTasks(context, widgets);
+    const tasks = buildWidgetTasks(context, widgets, false);
     const ret = yield tasks;
 
     const successWidgets = {};
@@ -375,7 +378,7 @@ function wrapToSuccGen(context, widget) {
         /*
             meta与data一起进行用以渲染，data的优先级更高
          */
-        const results = yield render(widget, Object.assign({}, meta, data));
+        const results = yield renderUtil.render(context, widget, Object.assign({}, meta, data));
 
         if (computedServerCacheKey) {
             widgetCaches.set(computedServerCacheKey, {

@@ -3,6 +3,7 @@
 require('es6-promise').polyfill();
 const Vue = require('vue');
 const Vuex = require('vuex');
+const VueRouter = require('vue-router');
 const BaseSupportor = require('./basesupportor.js');
 const Enums = require('billund-enums');
 const WidgetEnums = Enums.widget;
@@ -33,7 +34,7 @@ class VueSupportor extends BaseSupportor {
         /*
             为什么放在这里执行？因为后面两项方法都依赖store的初始化
          */
-        this.useVuex();
+        this.useVuePlugins();
         this.initStore();
         this.parseWidgetConfigs();
         this.initWidgetProps();
@@ -42,8 +43,9 @@ class VueSupportor extends BaseSupportor {
         this.tryDoSthDependentOnContext();
     }
 
-    useVuex() {
+    useVuePlugins() {
         Vue.use(Vuex);
+        Vue.use(VueRouter);
     }
 
     aliasApi() {
@@ -112,6 +114,24 @@ class VueSupportor extends BaseSupportor {
          * 目前根据webpack的打包方式，也不会导致js分批次到达
          */
         this.dispatch = this.store.dispatch;
+
+        this.getEmptyComponent = (function() {
+            let element = null;
+            return function() {
+                if (!element) {
+                    element = {
+                        render(h) {
+                            return h('i', {
+                                'class': {
+                                    'empty-component': true
+                                }
+                            });
+                        }
+                    };
+                }
+                return element;
+            };
+        }());
     }
 
     /**
@@ -159,6 +179,84 @@ class VueSupportor extends BaseSupportor {
      */
     [SupportorEnums.BROWSER_SUPPORTOR_REGIST_STORE_CONFIG](config) {
         this.hotUpdate(config);
+    }
+
+    /**
+     * 注册router配置
+     * important!!! 如果有这个方法，需要提前预设！
+     * 这个api一定会被调用，因为也需要告知没有router的情况
+     *
+     * @param {Object} routerConfig - 配置
+     */
+    [SupportorEnums.BROWSER_SUPPORTOR_REGISTER_ROUTER_CONFIG](routerConfig) {
+        const id2WidgetBridge = {};
+        (this.widgetConfigs || []).forEach((config) => {
+            const id = config.id;
+            const widgetBridge = this.getWidgetBridgeById(id);
+            if (!widgetBridge) return null;
+
+            id2WidgetBridge[id] = widgetBridge;
+        });
+
+        if (!(routerConfig && routerConfig.routes && routerConfig.routes.length)) {
+            Object.keys(id2WidgetBridge).forEach((id) => {
+                id2WidgetBridge[id].initRouters();
+            });
+            return;
+        }
+
+        const routes = routerConfig.routes;
+        const rootPathIndex = routes.findIndex((route) => {
+            return route.path === '/';
+        });
+        if (rootPathIndex === -1) {
+            routes.push({
+                path: '/'
+            });
+        }
+
+        /*
+            1.从ssr成功的组件中，获取对应的componentPromise
+            2.成功后设置routers
+         */
+
+        const wait4SuccessComponents = this.successImportantWidgets.map((id) => {
+            return id2WidgetBridge[id].wait4Component();
+        });
+
+        Promise.all(wait4SuccessComponents).then((components) => {
+            routes.forEach((route) => {
+                route.components = route.components || {};
+
+                const path = route.path;
+                const props = route.props;
+                if (props) {
+                    route.props = {};
+                }
+                Object.keys(this.id2PathsMapping).forEach((id) => {
+                    // 没有设置的话，代表默认首页出现
+                    const paths = this.id2PathsMapping[id] || ['/'];
+                    if (paths.indexOf(path) !== -1) {
+                        const successComponent = components.find((component) => {
+                            return component.widgetId === id;
+                        });
+                        const component = successComponent || function() {
+                            return id2WidgetBridge[id].wait4Component();
+                        };
+                        route.components[id] = component;
+                        if (props) {
+                            route.props[id] = props;
+                        }
+                    } else {
+                        route.components[id] = this.getEmptyComponent();
+                    }
+                });
+            });
+            const routers = new VueRouter(routerConfig);
+            Object.keys(id2WidgetBridge).forEach((id) => {
+                id2WidgetBridge[id].initRouters(routers);
+            });
+        });
     }
 
     /**

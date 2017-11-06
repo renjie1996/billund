@@ -1,7 +1,7 @@
 'use strict';
 
 const _ = require('lodash');
-const Vue = require('vue');
+const Vue = require('vue/dist/vue.common.js');
 const Vuex = require('vuex');
 Vue.use(Vuex);
 

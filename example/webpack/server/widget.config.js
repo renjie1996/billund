@@ -33,7 +33,8 @@ function getExternals() {
         'redux',
         'vue',
         'vue-server-renderer',
-        'vuex'
+        'vuex',
+        'vue-router'
     ];
 }
 

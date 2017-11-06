@@ -47,11 +47,14 @@ class BaseFESupportor {
          */
         this.initialState = window[StateEnums.INITIAL_STATE] || {};
         this.store = null; // store根据具体类型初始化
+        this.widgetConfigs = null;
         /*
             组件相关
          */
         // 重要的组件
         this.importantWidgets = [];
+        // 成功的重要组件
+        this.successImportantWidgets = [];
         // 失败的组件
         this.fallbackWidgets = [];
         // widgetName到widget实例们的关联
@@ -66,6 +69,8 @@ class BaseFESupportor {
         this.hasTakedViewToFrontEnd = false;
         // 组件id和渲染类型的mapping
         this.id2RenderTypeMapping = {};
+        // 组件的id和单页面路径的映射
+        this.id2PathsMapping = {};
         // 一些与上下文强相关的事件是否已经处理
         this.sthDependentOnContextProcessed = false;
 
@@ -136,8 +141,8 @@ class BaseFESupportor {
          */
         function extractImportantWidgets() {
             self.importantWidgets = window[WidgetEnums.WIDGETS_IMPORTANT] || [];
-            const successImportantWidgets = window[WidgetEnums.WIDGETS_IMPORTANT_SUCCESSED] || [];
-            successImportantWidgets.forEach((widgetId) => {
+            self.successImportantWidgets = window[WidgetEnums.WIDGETS_IMPORTANT_SUCCESSED] || [];
+            self.successImportantWidgets.forEach((widgetId) => {
                 self.shouldTakeViewToFrontEnd(widgetId);
             });
         }
@@ -152,7 +157,7 @@ class BaseFESupportor {
      * 解析与组件配置的内容
      */
     parseWidgetConfigs() {
-        const configs = window[WidgetEnums.WIDGET_CONFIGS] || [];
+        const configs = this.widgetConfigs = window[WidgetEnums.WIDGET_CONFIGS] || [];
         const self = this;
 
         /**
@@ -169,6 +174,16 @@ class BaseFESupportor {
             if (!widgetBridge) return;
 
             self.name2Widgets[name].push(widgetBridge);
+        }
+
+        /**
+         * 关联组件的id与paths
+         *
+         * @param  {String} id - 组件id
+         * @param  {Array} paths  - 路径列表
+         */
+        function relatedWidgetId2Paths(id, paths) {
+            self.id2PathsMapping[id] = paths;
         }
 
         /**
@@ -193,6 +208,7 @@ class BaseFESupportor {
         configs.forEach((config) => {
             parseWidgetConfig(config);
             relatedWidget2Name(config.id, config.name);
+            relatedWidgetId2Paths(config.id, config.paths);
         });
     }
 
@@ -220,6 +236,14 @@ class BaseFESupportor {
      */
     [SupportorEnums.BROWSER_SUPPORTOR_REGIST_STORE_CONFIG]() {
         throw new Error(`you should impletement ${SupportorEnums.BROWSER_SUPPORTOR_REGIST_STORE_CONFIG} function.`);
+    }
+
+    /**
+     * 注册router配置
+     * important!!! 如果有这个方法，需要提前预设！
+     */
+    [SupportorEnums.BROWSER_SUPPORTOR_REGISTER_ROUTER_CONFIG]() {
+        throw new Error(`you should impletement ${SupportorEnums.BROWSER_SUPPORTOR_REGISTER_ROUTER_CONFIG} function.`);
     }
 
     /**

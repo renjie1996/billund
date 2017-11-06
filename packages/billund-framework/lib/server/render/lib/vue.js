@@ -3,7 +3,9 @@
 const isDev = (process.env.LEGO_ENV === 'development' || process.env.BILLUND_ENV === 'development');
 
 const _ = require('lodash');
-const Vue = require('vue');
+const Vue = require('vue/dist/vue.common.js');
+const Enums = require('billund-enums');
+const StateEnums = Enums.state;
 
 // 目前使用直接创建的方法,因为我们自己已经实现了bigpipe
 const renderer = require('vue-server-renderer').createRenderer({
@@ -16,11 +18,12 @@ const renderer = require('vue-server-renderer').createRenderer({
 /**
  * 渲染组件内容
  *
+ * @param  {Object} context - koa上下文
  * @param  {Object} widget - 组件
  * @param  {Object} data - 渲染数据
  * @return {String}
  */
-function* render(widget, data) {
+function* render(context, widget, data) {
     const vueConfig = widget.template;
     if (!vueConfig) throw new Error(`name:${widget.name} missing template!`);
 
@@ -29,7 +32,7 @@ function* render(widget, data) {
     // 判断是否是合理的数据类型
     isValidProps(data) || (data = {});
 
-    const provider = createProvider(vueConfig, data, widget.store);
+    const provider = createProvider(context, widget, data);
 
     return yield new Promise((resolve, reject) => {
         renderer.renderToString(provider, (error, html) => {
@@ -54,26 +57,123 @@ function isValidProps(data) {
     return data && _.isObject(data);
 }
 
+const getEmptyComponent = (function() {
+    let element = null;
+    return function() {
+        if (!element) {
+            element = {
+                render(h) {
+                    return h('i', {
+                        'class': {
+                            'empty-component': true
+                        }
+                    });
+                }
+            };
+        }
+        return element;
+    };
+}());
+
 /**
- * 在外围创建一个根节点,包装我们自己的容器
+ * 获取基本的组件信息
  *
- * @param  {Object} wrappedElement - 被包装的元素
- * @param  {Object} props - 数据
- * @param  {Object} store - vuex store
+ * @param  {Object} widget - 组件信息
  * @return {Object}
  */
-function createProvider(wrappedElement, props, store) {
-    return new Vue({
-        store,
+function getBaseComponent(widget) {
+    return {
         components: {
-            'wrapped-element': wrappedElement
+            'wrapped-element': widget.template
+        },
+        computed: {
+            widgetProps() {
+                return this.$store.getters[StateEnums.WIDGET_VUEX_GETTERS_PREFIX + widget.id];
+            }
         },
         render(h) {
+            const attrs = this.$attrs || {}; // for router
+            const props = this.widgetProps;
             return h('wrapped-element', {
-                props
+                props: Object.assign({}, props, attrs),
+                attrs
             });
+        }
+    };
+}
+
+/**
+ * 创建组件级的store-module
+ *
+ * @param  {Object} widget - 组件信息
+ * @param  {Object} props - 获取到的数据
+ */
+function registerWidgetStore(widget, props) {
+    /*
+        因为vue的特性，需要对存在的字段加入setter,getter,所以我们需要对那些不存在的字段做一个兼容
+    */
+    const declareProps = widget.template.props || {};
+    const tplProps = {};
+
+    const defaultPropKeys = _.isArray(declareProps) ? declareProps : Object.keys(declareProps);
+
+    defaultPropKeys.forEach((propKey) => {
+        const prop = declareProps[propKey];
+        if (!(_.isObject(prop) && prop.default !== undefined)) {
+            tplProps[propKey] = null;
+            return true;
+        }
+        tplProps[propKey] = undefined;
+    });
+
+    props = _.extend({}, tplProps, props);
+
+    widget.store.registerModule(StateEnums.PREFIX_WIDGET_OWN_STATE_KEY + widget.id, {
+        state: props,
+        getters: {
+            [StateEnums.WIDGET_VUEX_GETTERS_PREFIX + widget.id](state) {
+                return state;
+            }
         }
     });
 }
 
-module.exports = render;
+/**
+ * 在外围创建一个根节点,包装我们自己的容器
+ *
+ * @param  {Object} context - koa上下文
+ * @param  {Object} widget - 组件信息
+ * @param  {Object} props - 数据
+ * @return {Object}
+ */
+function createProvider(context, widget, props) {
+    /*
+        目前，用store来进行所有数据的串联，因为我们要用同一个router
+     */
+    registerWidgetStore(widget, props);
+    const needRouter = !!widget.router;
+    if (needRouter) {
+        const app = new Vue({
+            router: widget.router,
+            store: widget.store,
+            render(h) {
+                return h('router-view', {
+                    props: {
+                        name: widget.id
+                    }
+                });
+            }
+        });
+        widget.router.push(widget.router.pushUrl);
+        return app;
+    }
+    return new Vue(Object.assign(getBaseComponent(widget), {
+        store: widget.store
+    }));
+}
+
+module.exports = {
+    render,
+    getBaseComponent,
+    getEmptyComponent
+};

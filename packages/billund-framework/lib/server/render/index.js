@@ -14,20 +14,13 @@ function doInit() {
 }
 doInit();
 
-/**
- * 渲染组件内容
- *
- * @param  {Object} widget - 组件
- * @param  {Object} data - 渲染数据
- * @return {String}
- */
-function* render(widget, data) {
+function* render(context, widget, data) {
     const renderType = widget.renderType;
     if (renderType == RENDER_TYPE.RENDER_TYPE_VUE) {
         if (!vueRender) {
             vueRender = require('./lib/vue.js');
         }
-        return yield vueRender(widget, data);
+        return yield vueRender.render(context, widget, data);
     }
     if (!reactRender) {
         reactRender = require('./lib/react.js');
@@ -35,4 +28,6 @@ function* render(widget, data) {
     return reactRender(widget, data);
 }
 
-module.exports = render;
+module.exports = {
+    render
+};
