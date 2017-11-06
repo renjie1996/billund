@@ -4,6 +4,7 @@ require('es6-promise').polyfill();
 const Vue = require('vue');
 const Vuex = require('vuex');
 const VueRouter = require('vue-router');
+const compareVersions = require('compare-versions');
 const BaseSupportor = require('./basesupportor.js');
 const Enums = require('billund-enums');
 const WidgetEnums = Enums.widget;
@@ -232,6 +233,9 @@ class VueSupportor extends BaseSupportor {
                 const props = route.props;
                 if (props) {
                     route.props = {};
+                    if (compareVersions(Vue.version, '2.4.0') !== 1) {
+                        console.error(`error: for vue version below 2.4.0 so that you can't use route prop`);
+                    }
                 }
                 Object.keys(this.id2PathsMapping).forEach((id) => {
                     // 没有设置的话，代表默认首页出现

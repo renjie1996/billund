@@ -1,5 +1,10 @@
 'use strict';
 
+const isDev = (process.env.LEGO_ENV === 'development' || process.env.BILLUND_ENV === 'development');
+
+const debug = require('debug');
+const log = debug('billund-vue-router:error');
+const compareVersions = require('compare-versions');
 const Vue = require('vue/dist/vue.common.js');
 const VueRouter = require('vue-router');
 Vue.use(VueRouter);
@@ -46,6 +51,9 @@ function createRouter(context, config, widgets) {
         const props = route.props;
         if (props) {
             route.props = {};
+            if (isDev && (compareVersions(Vue.version, '2.4.0') !== 1)) {
+                log(`error: for vue version below 2.4.0 so that you can't use route prop`);
+            }
         }
         widgets.forEach((widget) => {
             // 没有设置的话，代表默认首页出现

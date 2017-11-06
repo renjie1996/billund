@@ -22,7 +22,8 @@
     "billund-utils": "^1.1.0-alpha.18",
     "lodash": "^4.15.0",
     "lru-cache": "^4.0.1",
-    "ejs": "^2.0.0"
+    "ejs": "^2.0.0",
+    "compare-versions": "^3.0.0"
   },
   "peerDependencies": {
     "react": "^0.14.0 || ^15.0.0-0",

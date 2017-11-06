@@ -7,7 +7,7 @@
 		exports["BillundSupportor"] = factory(require("react"), require("react-redux"), require("vue"), require("react-dom"), require("redux"), require("vue-router"), require("vuex"));
 	else
 		root["BillundSupportor"] = factory(root["React"], root["ReactRedux"], root["Vue"], root["ReactDom"], root["Redux"], root["VueRouter"], root["Vuex"]);
-})(this, function(__WEBPACK_EXTERNAL_MODULE_9__, __WEBPACK_EXTERNAL_MODULE_10__, __WEBPACK_EXTERNAL_MODULE_11__, __WEBPACK_EXTERNAL_MODULE_29__, __WEBPACK_EXTERNAL_MODULE_30__, __WEBPACK_EXTERNAL_MODULE_31__, __WEBPACK_EXTERNAL_MODULE_32__) {
+})(this, function(__WEBPACK_EXTERNAL_MODULE_9__, __WEBPACK_EXTERNAL_MODULE_10__, __WEBPACK_EXTERNAL_MODULE_11__, __WEBPACK_EXTERNAL_MODULE_30__, __WEBPACK_EXTERNAL_MODULE_31__, __WEBPACK_EXTERNAL_MODULE_32__, __WEBPACK_EXTERNAL_MODULE_33__) {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -1050,10 +1050,10 @@ var _createClass = function () { function defineProperties(target, props) { for 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 __webpack_require__(6).polyfill();
-window.regeneratorRuntime = __webpack_require__(27);
+window.regeneratorRuntime = __webpack_require__(28);
 // https://www.npmjs.com/package/browser-cookies
 var Cookies = __webpack_require__(21);
-var qs = __webpack_require__(24);
+var qs = __webpack_require__(25);
 
 var co = __webpack_require__(22);
 var Enums = __webpack_require__(0);
@@ -2099,7 +2099,7 @@ function flush() {
 function attemptVertx() {
   try {
     var r = require;
-    var vertx = __webpack_require__(33);
+    var vertx = __webpack_require__(34);
     vertxNext = vertx.runOnLoop || vertx.runOnContext;
     return useVertxTimer();
   } catch (e) {
@@ -3120,7 +3120,7 @@ return Promise$2;
 
 //# sourceMappingURL=es6-promise.map
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(23), __webpack_require__(2)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(24), __webpack_require__(2)))
 
 /***/ }),
 /* 7 */
@@ -3464,7 +3464,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 var React = __webpack_require__(9);
-var Redux = __webpack_require__(30);
+var Redux = __webpack_require__(31);
 var ReactRedux = __webpack_require__(10);
 
 var BaseSupportor = __webpack_require__(5);
@@ -3800,8 +3800,9 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 __webpack_require__(6).polyfill();
 var Vue = __webpack_require__(11);
-var Vuex = __webpack_require__(32);
-var VueRouter = __webpack_require__(31);
+var Vuex = __webpack_require__(33);
+var VueRouter = __webpack_require__(32);
+var compareVersions = __webpack_require__(23);
 var BaseSupportor = __webpack_require__(5);
 var Enums = __webpack_require__(0);
 var WidgetEnums = Enums.widget;
@@ -4054,6 +4055,9 @@ var VueSupportor = function (_BaseSupportor) {
                     var props = route.props;
                     if (props) {
                         route.props = {};
+                        if (compareVersions(Vue.version, '2.4.0') !== 1) {
+                            console.error('error: for vue version below 2.4.0 so that you can\'t use route prop');
+                        }
                     }
                     Object.keys(_this3.id2PathsMapping).forEach(function (id) {
                         // 没有设置的话，代表默认首页出现
@@ -4283,7 +4287,7 @@ module.exports = ReactWidgetBridge;
 
 
 var React = __webpack_require__(9);
-var ReactDom = __webpack_require__(29);
+var ReactDom = __webpack_require__(30);
 var ReactRedux = __webpack_require__(10);
 
 /**
@@ -4345,8 +4349,6 @@ var _extends = Object.assign || function (target) { for (var i = 1; i < argument
 
 var Vue = __webpack_require__(11);
 var Enums = __webpack_require__(0);
-
-var StateEnums = Enums.state;
 
 /**
  * 链接vue的组件
@@ -5075,6 +5077,83 @@ function isObject(val) {
 
 /***/ }),
 /* 23 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* global define */
+(function (root, factory) {
+    /* istanbul ignore next */
+    if (true) {
+        !(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+				__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+				(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+    } else if (typeof exports === 'object') {
+        module.exports = factory();
+    } else {
+        root.compareVersions = factory();
+    }
+}(this, function () {
+
+    var semver = /^v?(?:\d+)(\.(?:[x*]|\d+)(\.(?:[x*]|\d+)(?:-[\da-z\-]+(?:\.[\da-z\-]+)*)?(?:\+[\da-z\-]+(?:\.[\da-z\-]+)*)?)?)?$/i;
+    var patch = /-([0-9A-Za-z-.]+)/;
+
+    function split(v) {
+        var temp = v.replace(/^v/, '').split('.');
+        var arr = temp.splice(0, 2);
+        arr.push(temp.join('.'));
+        return arr;
+    }
+
+    function tryParse(v) {
+        return isNaN(Number(v)) ? v : Number(v);
+    }
+
+    function validate(version) {
+        if (typeof version !== 'string') {
+            throw new TypeError('Invalid argument expected string');
+        }
+        if (!semver.test(version)) {
+            throw new Error('Invalid argument not valid semver');
+        }
+    }
+
+    return function compareVersions(v1, v2) {
+        [v1, v2].forEach(validate);
+
+        var s1 = split(v1);
+        var s2 = split(v2);
+
+        for (var i = 0; i < 3; i++) {
+            var n1 = parseInt(s1[i] || 0, 10);
+            var n2 = parseInt(s2[i] || 0, 10);
+
+            if (n1 > n2) return 1;
+            if (n2 > n1) return -1;
+        }
+
+        if ([s1[2], s2[2]].every(patch.test.bind(patch))) {
+            var p1 = patch.exec(s1[2])[1].split('.').map(tryParse);
+            var p2 = patch.exec(s2[2])[1].split('.').map(tryParse);
+
+            for (i = 0; i < Math.max(p1.length, p2.length); i++) {
+                if (p1[i] === undefined || typeof p2[i] === 'string' && typeof p1[i] === 'number') return -1;
+                if (p2[i] === undefined || typeof p1[i] === 'string' && typeof p2[i] === 'number') return 1;
+
+                if (p1[i] > p2[i]) return 1;
+                if (p2[i] > p1[i]) return -1;
+            }
+        } else if ([s1[2], s2[2]].some(patch.test.bind(patch))) {
+            return patch.test(s1[2]) ? -1 : 1;
+        }
+
+        return 0;
+    };
+
+}));
+
+
+/***/ }),
+/* 24 */
 /***/ (function(module, exports) {
 
 // shim for using process in browser
@@ -5264,14 +5343,14 @@ process.umask = function() { return 0; };
 
 
 /***/ }),
-/* 24 */
+/* 25 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var stringify = __webpack_require__(26);
-var parse = __webpack_require__(25);
+var stringify = __webpack_require__(27);
+var parse = __webpack_require__(26);
 var formats = __webpack_require__(7);
 
 module.exports = {
@@ -5282,7 +5361,7 @@ module.exports = {
 
 
 /***/ }),
-/* 25 */
+/* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -5463,7 +5542,7 @@ module.exports = function (str, opts) {
 
 
 /***/ }),
-/* 26 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -5680,7 +5759,7 @@ module.exports = function (object, opts) {
 
 
 /***/ }),
-/* 27 */
+/* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global) {// This method of obtaining a reference to the global object needs to be
@@ -5701,7 +5780,7 @@ var oldRuntime = hadRuntime && g.regeneratorRuntime;
 // Force reevalutation of runtime.js.
 g.regeneratorRuntime = undefined;
 
-module.exports = __webpack_require__(28);
+module.exports = __webpack_require__(29);
 
 if (hadRuntime) {
   // Restore the original runtime.
@@ -5718,7 +5797,7 @@ if (hadRuntime) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 28 */
+/* 29 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global) {/**
@@ -6461,12 +6540,6 @@ if (hadRuntime) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 29 */
-/***/ (function(module, exports) {
-
-module.exports = __WEBPACK_EXTERNAL_MODULE_29__;
-
-/***/ }),
 /* 30 */
 /***/ (function(module, exports) {
 
@@ -6486,6 +6559,12 @@ module.exports = __WEBPACK_EXTERNAL_MODULE_32__;
 
 /***/ }),
 /* 33 */
+/***/ (function(module, exports) {
+
+module.exports = __WEBPACK_EXTERNAL_MODULE_33__;
+
+/***/ }),
+/* 34 */
 /***/ (function(module, exports) {
 
 /* (ignored) */
