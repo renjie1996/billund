@@ -3,8 +3,6 @@
 const Vue = require('vue');
 const Enums = require('billund-enums');
 
-const StateEnums = Enums.state;
-
 /**
  * 链接vue的组件
  *

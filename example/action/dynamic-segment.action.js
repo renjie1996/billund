@@ -1,5 +1,7 @@
 'use strict';
 
+const BASE = '/dynamic-segment';
+
 function* action() {
     this.legoConfig = {
         widgets: [{
@@ -36,13 +38,16 @@ function* action() {
             }]
         },
         routerConfig: {
-            mode: 'history',
+            base: '/dynamic-segment/',
             routes: [{
                     path: '/'
                 },
                 {
                     path: '/hello/:name',
-                    props: true
+                    props: true,
+                    beforeEnter(to, from, next) {
+                        next();
+                    }
                 },
                 {
                     path: '/static',
@@ -71,6 +76,8 @@ function* action() {
 }
 
 module.exports = {
-    url: ['/', '/hello/:name', '/static', '/dynamic/:years', '/attrs'],
+    url: ['/', '/hello/:name', '/static', '/dynamic/:years', '/attrs'].map((value) => {
+        return BASE + value;
+    }),
     action
 };

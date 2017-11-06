@@ -4,6 +4,8 @@ const Vue = require('vue/dist/vue.common.js');
 const VueRouter = require('vue-router');
 Vue.use(VueRouter);
 
+const VueRender = require('../../render/lib/vue.js');
+
 function normalizeBase(base) {
     // make sure there's the starting slash
     if (base.charAt(0) !== '/') {
@@ -38,7 +40,7 @@ function createRouter(context, config, widgets) {
     }
 
     routes.forEach((route) => {
-        route.renderWidgets = route.renderWidgets || {};
+        route.components = route.components || {};
 
         const path = route.path;
         const props = route.props;
@@ -49,13 +51,16 @@ function createRouter(context, config, widgets) {
             // 没有设置的话，代表默认首页出现
             const paths = widget.paths || ['/'];
             if (paths.indexOf(path) !== -1) {
-                route.renderWidgets[widget.id] = true;
+                route.components[widget.id] = VueRender.getBaseComponent(widget);
                 if (props) {
                     route.props[widget.id] = props;
                 }
+            } else {
+                route.components[widget.id] = VueRender.getEmptyComponent();
             }
         });
     });
+    const router = new VueRouter(routerConfig);
 
     let pushUrl = '/';
     if (routerConfig.mode === 'history') {
@@ -65,8 +70,8 @@ function createRouter(context, config, widgets) {
         }
         pushUrl = pushUrl || '/';
     }
-    routerConfig.pushUrl = pushUrl;
-    return routerConfig;
+    router.pushUrl = pushUrl;
+    return router;
 }
 
 module.exports = {

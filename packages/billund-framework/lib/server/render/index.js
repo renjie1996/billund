@@ -20,7 +20,7 @@ function* render(context, widget, data) {
         if (!vueRender) {
             vueRender = require('./lib/vue.js');
         }
-        return yield vueRender(context, widget, data);
+        return yield vueRender.render(context, widget, data);
     }
     if (!reactRender) {
         reactRender = require('./lib/react.js');

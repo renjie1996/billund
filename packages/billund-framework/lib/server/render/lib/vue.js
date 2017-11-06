@@ -4,7 +4,8 @@ const isDev = (process.env.LEGO_ENV === 'development' || process.env.BILLUND_ENV
 
 const _ = require('lodash');
 const Vue = require('vue/dist/vue.common.js');
-const VueRouter = require('vue-router');
+const Enums = require('billund-enums');
+const StateEnums = Enums.state;
 
 // 目前使用直接创建的方法,因为我们自己已经实现了bigpipe
 const renderer = require('vue-server-renderer').createRenderer({
@@ -75,6 +76,69 @@ const getEmptyComponent = (function() {
 }());
 
 /**
+ * 获取基本的组件信息
+ *
+ * @param  {Object} widget - 组件信息
+ * @return {Object}
+ */
+function getBaseComponent(widget) {
+    return {
+        components: {
+            'wrapped-element': widget.template
+        },
+        computed: {
+            widgetProps() {
+                return this.$store.getters[StateEnums.WIDGET_VUEX_GETTERS_PREFIX + widget.id];
+            }
+        },
+        render(h) {
+            const attrs = this.$attrs || {}; // for router
+            const props = this.widgetProps;
+            return h('wrapped-element', {
+                props: Object.assign({}, props, attrs),
+                attrs
+            });
+        }
+    };
+}
+
+/**
+ * 创建组件级的store-module
+ *
+ * @param  {Object} widget - 组件信息
+ * @param  {Object} props - 获取到的数据
+ */
+function registerWidgetStore(widget, props) {
+    /*
+        因为vue的特性，需要对存在的字段加入setter,getter,所以我们需要对那些不存在的字段做一个兼容
+    */
+    const declareProps = widget.template.props || {};
+    const tplProps = {};
+
+    const defaultPropKeys = _.isArray(declareProps) ? declareProps : Object.keys(declareProps);
+
+    defaultPropKeys.forEach((propKey) => {
+        const prop = declareProps[propKey];
+        if (!(_.isObject(prop) && prop.default !== undefined)) {
+            tplProps[propKey] = null;
+            return true;
+        }
+        tplProps[propKey] = undefined;
+    });
+
+    props = _.extend({}, tplProps, props);
+
+    widget.store.registerModule(StateEnums.PREFIX_WIDGET_OWN_STATE_KEY + widget.id, {
+        state: props,
+        getters: {
+            [StateEnums.WIDGET_VUEX_GETTERS_PREFIX + widget.id](state) {
+                return state;
+            }
+        }
+    });
+}
+
+/**
  * 在外围创建一个根节点,包装我们自己的容器
  *
  * @param  {Object} context - koa上下文
@@ -83,31 +147,14 @@ const getEmptyComponent = (function() {
  * @return {Object}
  */
 function createProvider(context, widget, props) {
+    /*
+        目前，用store来进行所有数据的串联，因为我们要用同一个router
+     */
+    registerWidgetStore(widget, props);
     const needRouter = !!widget.router;
     if (needRouter) {
-        const component = {
-            components: {
-                'wrapped-element': widget.template
-            },
-            render(h) {
-                const attrs = this.$attrs || {}; // for router
-                return h('wrapped-element', {
-                    props: Object.assign({}, props, attrs),
-                    attrs
-                });
-            }
-        };
-        widget.router.routes.forEach((route) => {
-            route.components = route.components || {};
-            if (route.renderWidgets[widget.id]) {
-                route.components[widget.id] = component;
-            } else {
-                route.components[widget.id] = getEmptyComponent();
-            }
-        });
-        const router = new VueRouter(widget.router);
         const app = new Vue({
-            router,
+            router: widget.router,
             store: widget.store,
             render(h) {
                 return h('router-view', {
@@ -117,20 +164,16 @@ function createProvider(context, widget, props) {
                 });
             }
         });
-        router.push(widget.router.pushUrl);
+        widget.router.push(widget.router.pushUrl);
         return app;
     }
-    return new Vue({
-        store: widget.store,
-        components: {
-            'wrapped-element': widget.template
-        },
-        render(h) {
-            return h('wrapped-element', {
-                props
-            });
-        }
-    });
+    return new Vue(Object.assign(getBaseComponent(widget), {
+        store: widget.store
+    }));
 }
 
-module.exports = render;
+module.exports = {
+    render,
+    getBaseComponent,
+    getEmptyComponent
+};
