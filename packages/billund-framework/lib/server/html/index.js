@@ -196,7 +196,9 @@ function getTemplateStr(legoConfig) {
  */
 function exportStaticResources(config, widgets) {
     const options = config.options || {};
-    const ret = options.staticResources || [];
+    options.staticResources = [].concat(options.staticResources);
+
+    const ret = options.staticResources;
     const vendors = baseopt.vendors;
 
     const renderTypeCountMap = widgetUtil.addupRenderTypeCount(widgets);
