@@ -80,6 +80,10 @@ function* execute(context) {
     /*
         进行一些基本的准备工作,例如区分核心非核心模块，自动填充静态资源，创建store等
      */
+    legoConfig.storeData = Object.assign({}, legoConfig.storeData);
+    // 原因是 如果storeData和params用了同一个数据,然后数据又注册进了Store，导致自身重复引用
+    const originalStoreData = Object.assign({}, legoConfig.storeData);
+
     const widgets = widgetUtil.convertWidgets(legoConfig.widgets || []);
     const mostImportantWidgets = legoUtils.widget.extractImportantWidgets(widgets);
     const otherWidgets = _.difference(widgets, mostImportantWidgets);
@@ -98,7 +102,7 @@ function* execute(context) {
 
     const pluginConfig = {
         allowShowEvenFailed: !!legoConfig.allowShowEvenFailed,
-        storeData: legoConfig.storeData || {},
+        storeData: originalStoreData,
         widgets,
         mostImportantWidgets,
         executeResults: {
