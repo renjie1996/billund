@@ -20,7 +20,7 @@ const worker = require('./html/index.js');
  * @return {GenerateFunction}
  */
 function init(config) {
-    const routers = actionBinder.bindActionRouter({
+    actionBinder.bindActionRouter({
         actionDir: config.actionDir,
         nameRegex: config.actionNameRegex
     });
@@ -62,7 +62,7 @@ function init(config) {
         }
     }
     return function* combineLego(next) {
-        yield doRender.call(this, routers.call(this, next));
+        yield doRender.call(this, actionBinder.router.call(this, next));
     };
 }
 

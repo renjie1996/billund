@@ -3,32 +3,7 @@
 const _ = require('lodash');
 const legoUtils = require('billund-utils');
 const router = require('koa-router')();
-
-// /**
-//  * 增加对降级url的支持
-//  *
-//  * @param {Object} config - 初始化配置
-//  */
-// function addFallbackActionSupport(config) {
-//     if (!(config && config.fallbackUrl)) {
-//         console.warn(`please regist a fallbackUrl for fallback widgets`);
-//         return;
-//     }
-
-//     function* action() {
-//         const query = this.query || {};
-//         const widgetName = query.widgetname || '';
-//         let params = query.params || '';
-//         // 进行转换,可能报错,需要兼容
-//         try {
-//             params = JSON.parse(params);
-//         } catch (e) {
-//             params = {};
-//         }
-//     }
-
-//     router.register(config.fallbackUrl, ['get', 'post'], [actionConfig.action]);
-// }
+let routerIns = null;
 
 /**
  * 绑定对应的action到routers中
@@ -39,7 +14,6 @@ const router = require('koa-router')();
  *      nameRegex: [Regex|String] // 名称的正则
  *      fallbackUrl: [String] // 降级的url
  * }
- * @return {GenerateFunction} - 中间件函数
  */
 function bindActionRouter(config) {
     if (!(config && config.actionDir)) throw new Error('missing actionDir config in lego framework');
@@ -83,9 +57,10 @@ function bindActionRouter(config) {
             registUrlToAction(url, actionConfig.action);
         });
     });
-    return router.routes();
+    routerIns = router.routes();
 }
 
 module.exports = {
+    router: routerIns,
     bindActionRouter
 };
