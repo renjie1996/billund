@@ -1,28 +1,20 @@
 'use strict';
 
+const isDev = (process.env.LEGO_ENV === 'development' || process.env.BILLUND_ENV === 'development');
+
 const _ = require('lodash');
 const legoUtils = require('billund-utils');
-const router = require('koa-router')();
+
 let routerIns = null;
 
 /**
- * 绑定对应的action到routers中
+ * 初始化router
  *
- * @param  {Object} config - 对应的配置项目,字段如下:
- * {
- *      actionDir: [String], // action的文件夹名称
- *      nameRegex: [Regex|String] // 名称的正则
- *      fallbackUrl: [String] // 降级的url
- * }
+ * @param  {Array} actions - controler层的列表
  */
-function bindActionRouter(config) {
-    if (!(config && config.actionDir)) throw new Error('missing actionDir config in lego framework');
-
-    const actions = legoUtils.common.getFilteredFiles(config.actionDir, {
-        nameRegex: config.nameRegex
-    });
-
+function initRouter(actions) {
     const url2Path = {};
+    const router = require('koa-router')();
 
     /**
      * 向router中注册url & action
@@ -58,6 +50,26 @@ function bindActionRouter(config) {
         });
     });
     routerIns = router.routes();
+}
+
+/**
+ * 绑定对应的action到routers中
+ *
+ * @param  {Object} config - 对应的配置项目,字段如下:
+ * {
+ *      actionDir: [String], // action的文件夹名称
+ *      nameRegex: [Regex|String] // 名称的正则
+ *      fallbackUrl: [String] // 降级的url
+ * }
+ */
+function bindActionRouter(config) {
+    if (!(config && config.actionDir)) throw new Error('missing actionDir config in lego framework');
+
+    const actions = legoUtils.common.getFilteredFiles(config.actionDir, {
+        nameRegex: config.nameRegex
+    });
+
+    initRouter(actions);
 }
 
 module.exports = {
