@@ -1,6 +1,6 @@
 {
   "name": "billund-supportor",
-  "version": "1.2.0-alpha.2",
+  "version": "1.2.0-alpha.5",
   "description": "billund browser supportor",
   "main": "built/billund-supportor.js",
   "scripts": {
