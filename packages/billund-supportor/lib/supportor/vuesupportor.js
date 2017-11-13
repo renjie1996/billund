@@ -3,7 +3,7 @@
 require('es6-promise').polyfill();
 const Vue = require('vue');
 const Vuex = require('vuex');
-const VueRouter = require('vue-router');
+import VueRouter from 'vue-router';
 const compareVersions = require('compare-versions');
 const BaseSupportor = require('./basesupportor.js');
 const Enums = require('billund-enums');

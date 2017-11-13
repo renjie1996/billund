@@ -3790,6 +3790,12 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
 
+var _vueRouter = __webpack_require__(32);
+
+var _vueRouter2 = _interopRequireDefault(_vueRouter);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -3801,7 +3807,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 __webpack_require__(6).polyfill();
 var Vue = __webpack_require__(11);
 var Vuex = __webpack_require__(33);
-var VueRouter = __webpack_require__(32);
+
 var compareVersions = __webpack_require__(23);
 var BaseSupportor = __webpack_require__(5);
 var Enums = __webpack_require__(0);
@@ -3853,7 +3859,7 @@ var VueSupportor = function (_BaseSupportor) {
         key: 'useVuePlugins',
         value: function useVuePlugins() {
             Vue.use(Vuex);
-            Vue.use(VueRouter);
+            Vue.use(_vueRouter2.default);
         }
     }, {
         key: 'aliasApi',
@@ -4078,7 +4084,7 @@ var VueSupportor = function (_BaseSupportor) {
                         }
                     });
                 });
-                var routers = new VueRouter(routerConfig);
+                var routers = new _vueRouter2.default(routerConfig);
                 Object.keys(id2WidgetBridge).forEach(function (id) {
                     id2WidgetBridge[id].initRouters(routers);
                 });
